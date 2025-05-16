@@ -1,6 +1,6 @@
-# Mi Proyecto con AdminLTE
+# Mi Proyecto
 
-Este es un sistema de gestión que utiliza el template AdminLTE.
+Este es un sistema de gestión
 
 ## Tecnologías utilizadas
 
