@@ -18,7 +18,7 @@ La carpeta `/plugins` no está incluida en este repositorio para mantenerlo livi
 ### ¿Qué debes hacer?
 
 1. Descarga AdminLTE desde su repositorio oficial:  
-   [https://github.com/ColorlibHQ/AdminLTE](https://github.com/ColorlibHQ/AdminLTE)
+   [https://github.com/ColorlibHQ/AdminLTE/releases/tag/v3.2.0)
 
 2. Copia la carpeta `/plugins/` y colocalo en la raiz
 
