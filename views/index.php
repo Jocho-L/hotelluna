@@ -1,7 +1,13 @@
 <?php
+session_start();
 include('../app/config/Conexion.php');
 $conn = Conexion::getConexion();
 $conn = null;
+
+if (!isset($_SESSION['idusuario'])) {
+  header("Location: ../index.php");
+  exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -28,6 +34,9 @@ $conn = null;
 </head>
 
 <body class="hold-transition sidebar-mini">
+
+
+
   <div class="wrapper">
     <!-- Navbar -->
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -126,7 +135,7 @@ $conn = null;
             <img src="../public/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
           </div>
           <div class="info">
-            <a href="#" class="d-block">Alexander Pierce</a>
+            <a class="d-block"><?= $_SESSION['nombres'] . " " . $_SESSION['apellidos'] ?> (<?= $_SESSION['rol'] ?>)</a>
           </div>
         </div>
 
@@ -158,6 +167,12 @@ $conn = null;
                   </a>
                 </li>
                 <li class="nav-item">
+                  <a href="#" data-vista="personas/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Personas</p>
+                  </a>
+                </li>
+                <li class="nav-item">
                   <a href="#" data-vista="reservas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Reservas</p>
@@ -183,6 +198,9 @@ $conn = null;
                 <p>Reportes</p>
               </a>
             </li>
+            <li>
+              <p><a href="../logout.php">Cerrar sesión</a></p>
+            </li>
           </ul>
         </nav>
         <!-- /.sidebar-menu -->
@@ -199,6 +217,7 @@ $conn = null;
             <div class="col-sm-6">
               <h1 class="m-0">Inicio</h1>
             </div>
+
             <!-- /.col -->
             <div class="col-sm-6">
               <ol class="breadcrumb float-sm-right">
@@ -208,6 +227,39 @@ $conn = null;
             </div>
             <!-- /.col -->
           </div>
+
+          <!-- Filtros de habitaciones -->
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="filtro-piso">Filtrar por piso:</label>
+                <select class="form-control" id="filtro-piso">
+                  <option value="todos">Todos los pisos</option>
+                  <!-- Las opciones se llenarán dinámicamente -->
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="filtro-estado">Filtrar por estado:</label>
+                <select class="form-control" id="filtro-estado">
+                  <option value="todos">Todos los estados</option>
+                  <option value="Disponible" selected>Disponible</option>
+                  <option value="Ocupado">Ocupado</option>
+                  <option value="Mantenimiento">Mantenimiento</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="filtro-tipo">Filtrar por tipo:</label>
+                <select class="form-control" id="filtro-tipo">
+                  <option value="todos">Todos los tipos</option>
+                  <!-- Las opciones se llenarán dinámicamente -->
+                </select>
+              </div>
+            </div>
+          </div>
           <!-- /.row -->
         </div>
         <!-- /.container-fluid -->
@@ -215,7 +267,7 @@ $conn = null;
       <!-- /.content-header -->
 
       <!-- Main content -->
-      <!-- 
+      <!--
         Iconos para los paneles de HABITACIONES
         https://themeon.net/nifty/v2.9.1/icons-ionicons.html
         -->
@@ -273,78 +325,308 @@ $conn = null;
   <script src="https://cdn.datatables.net/v/dt/dt-2.0.3/datatables.min.js"></script>
 
   <script>
+    /* Filtros de habitaciones */
     document.addEventListener("DOMContentLoaded", () => {
-      fetch("menu/habitaciones.php")
-        .then(response => response.json())
-        .then(data => {
-          const container = document.getElementById("habitaciones-container");
-          container.innerHTML = "";
+      let todasHabitaciones = []; // Almacenar todas las habitaciones
 
-          data.forEach(h => {
+      // Cargar habitaciones al inicio
+      cargarHabitaciones();
+
+      // Event listeners para los filtros
+      document.getElementById('filtro-piso').addEventListener('change', filtrarHabitaciones);
+      document.getElementById('filtro-estado').addEventListener('change', filtrarHabitaciones);
+      document.getElementById('filtro-tipo').addEventListener('change', filtrarHabitaciones);
+
+      function cargarHabitaciones() {
+        fetch("menu/habitaciones.php")
+          .then(response => response.json())
+          .then(data => {
+            todasHabitaciones = data;
+            llenarOpcionesFiltros(data);
+            filtrarHabitaciones();
+          })
+          .catch(err => {
+            console.error("Error al cargar habitaciones:", err);
+            mostrarError();
+          });
+      }
+
+      function llenarOpcionesFiltros(habitaciones) {
+        // Llenar filtro de pisos
+        const pisosUnicos = [...new Set(habitaciones.map(h => h.piso))].sort();
+        const filtroPiso = document.getElementById('filtro-piso');
+
+        pisosUnicos.forEach(piso => {
+          const option = document.createElement('option');
+          option.value = piso;
+          option.textContent = `Piso ${piso}`;
+          filtroPiso.appendChild(option);
+        });
+
+        // Llenar filtro de tipos
+        const tiposUnicos = [...new Set(habitaciones.map(h => h.tipo))].sort();
+        const filtroTipo = document.getElementById('filtro-tipo');
+
+        tiposUnicos.forEach(tipo => {
+          const option = document.createElement('option');
+          option.value = tipo;
+          option.textContent = tipo;
+          filtroTipo.appendChild(option);
+        });
+      }
+
+      function filtrarHabitaciones() {
+        const filtroPiso = document.getElementById('filtro-piso').value;
+        const filtroEstado = document.getElementById('filtro-estado').value;
+        const filtroTipo = document.getElementById('filtro-tipo').value;
+
+        // Función para mapear estado de BD a visual
+        function mapEstado(estado) {
+          if (!estado) return 'Desconocido';
+          switch (estado.toLowerCase()) {
+            case 'ocupada':
+              return 'Ocupado';
+            case 'disponible':
+              return 'Disponible';
+            case 'mantenimiento':
+              return 'Mantenimiento';
+            default:
+              return 'Desconocido';
+          }
+        }
+
+        // Filtrar habitaciones según los criterios seleccionados
+        const habitacionesFiltradas = todasHabitaciones.filter(h => {
+          const cumplePiso = filtroPiso === 'todos' || h.piso == filtroPiso;
+          const estadoVisual = mapEstado(h.estado);
+          const cumpleEstado = filtroEstado === 'todos' || estadoVisual === filtroEstado;
+          const cumpleTipo = filtroTipo === 'todos' || h.tipo === filtroTipo;
+          return cumplePiso && cumpleEstado && cumpleTipo;
+        });
+
+        mostrarHabitaciones(habitacionesFiltradas);
+      }
+
+      function mostrarHabitaciones(habitaciones) {
+        const container = document.getElementById("habitaciones-container");
+        container.innerHTML = "";
+
+        if (habitaciones.length === 0) {
+          container.innerHTML = `
+            <div class="col-12">
+              <div class="alert alert-info">
+                No se encontraron habitaciones con los filtros seleccionados.
+              </div>
+            </div>`;
+          return;
+        }
+
+        const filtroPiso = document.getElementById('filtro-piso').value;
+
+        if (filtroPiso === 'todos') {
+          // Mostrar todas las habitaciones juntas, sin agrupar por piso
+          habitaciones.forEach(h => {
+            // Mapear estado de la BD a estado mostrado
+            let estado = h.estado ? h.estado : 'Desconocido';
+            if (estado.toLowerCase() === 'ocupada') estado = 'Ocupado';
+            if (estado.toLowerCase() === 'disponible') estado = 'Disponible';
+            if (estado.toLowerCase() === 'mantenimiento') estado = 'Mantenimiento';
+
             const box = `
-          <div class="col-lg-3 col-6">
-            <div class="small-box ${h.estado === 'Disponible' ? 'bg-success' : h.estado === 'Mantenimiento' ? 'bg-warning' : 'bg-secondary'}">
-              <div class="inner">
-                <h3 style="font-size: 40px;">${h.numero}</h3>
-                <p style="font-size: 18px; margin-bottom: 5px;">Tipo: ${h.tipo}</p>
-                <p style="font-size: 18px; margin-bottom: 5px;">Precio: <strong style="font-size: 20px;">S/. ${h.precio}</strong></p>
-                <p style="font-size: 18px;">N° Camas: <em>No definido</em></p> <!-- Aquí podrías agregar si tienes ese dato -->
-              </div>
-              <div class="icon">
-                <i class="fa fa-bed" style="font-size: 60px;"></i>
-              </div>
-              <a href="${h.estado === 'Disponible' ? `alquileres/registrar.php?idhabitacion=${h.idhabitacion}` : h.estado === 'Ocupado' ? `views/editar.php?idhabitacion=${h.idhabitacion}` : '#'}" class="small-box-footer" style="font-size: 18px;">
-                ${h.estado === 'Disponible' ? 'Alquilar' : h.estado === 'Mantenimiento' ? 'Mantenimiento' : 'Consultar'} <i class="fas fa-arrow-circle-right"></i>
-              </a>
-            </div>
-          </div>`;
+              <div class="col-lg-3 col-6">
+                <div class="small-box ${getColorEstado(estado)}">
+                  <div class="inner">
+                    <h3 style="font-size: 40px;">${h.numero}</h3>
+                    <p style="font-size: 18px; margin-bottom: 5px;">${h.tipo}</p>
+                    <p style="font-size: 18px; margin-bottom: 5px;">Precio: <strong>S/. ${h.precio}</strong></p>
+                    <p style="font-size: 18px;">Estado: <strong>${estado}</strong></p>
+                  </div>
+                  <div class="icon">
+                    <i class="fa fa-bed" style="font-size: 60px;"></i>
+                  </div>
+                  <a href="${getEnlaceAccion({...h, estado})}" class="small-box-footer" style="font-size: 18px;">
+                    ${getTextoAccion(estado)} <i class="fas fa-arrow-circle-right"></i>
+                  </a>
+                </div>
+              </div>`;
             container.innerHTML += box;
           });
-        })
-        .catch(err => {
-          console.error("Error al cargar habitaciones:", err);
-        });
+        } else {
+          // Agrupar por piso solo si se selecciona un piso específico
+          const habitacionesPorPiso = {};
+          habitaciones.forEach(h => {
+            if (!habitacionesPorPiso[h.piso]) {
+              habitacionesPorPiso[h.piso] = [];
+            }
+            habitacionesPorPiso[h.piso].push(h);
+          });
+
+          for (const piso in habitacionesPorPiso) {
+            // Encabezado del piso
+            container.innerHTML += `
+              <div class="col-12">
+                <h4 class="mt-4 mb-3">Piso ${piso}</h4>
+                <hr>
+              </div>`;
+
+            habitacionesPorPiso[piso].forEach(h => {
+              let estado = h.estado ? h.estado : 'Desconocido';
+              if (estado.toLowerCase() === 'ocupada') estado = 'Ocupado';
+              if (estado.toLowerCase() === 'disponible') estado = 'Disponible';
+              if (estado.toLowerCase() === 'mantenimiento') estado = 'Mantenimiento';
+
+              const box = `
+                <div class="col-lg-3 col-6">
+                  <div class="small-box ${getColorEstado(estado)}">
+                    <div class="inner">
+                      <h3 style="font-size: 40px;">${h.numero}</h3>
+                      <p style="font-size: 18px; margin-bottom: 5px;">${h.tipo}</p>
+                      <p style="font-size: 18px; margin-bottom: 5px;">Precio: <strong>S/. ${h.precio}</strong></p>
+                      <p style="font-size: 18px;">Estado: <strong>${estado}</strong></p>
+                    </div>
+                    <div class="icon">
+                      <i class="fa fa-bed" style="font-size: 60px;"></i>
+                    </div>
+                    <a href="${getEnlaceAccion({...h, estado})}" class="small-box-footer" style="font-size: 18px;">
+                      ${getTextoAccion(estado)} <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                  </div>
+                </div>`;
+              container.innerHTML += box;
+            });
+          }
+        }
+      }
+
+      function getColorEstado(estado) {
+        switch (estado.toLowerCase()) {
+          case 'disponible':
+            return 'bg-success';
+          case 'mantenimiento':
+            return 'bg-transparent';
+          case 'ocupado':
+            return 'bg-dark';
+          default:
+            return 'bg-secondary';
+        }
+      }
+
+      function getEnlaceAccion(habitacion) {
+        switch (habitacion.estado.toLowerCase()) {
+          case 'disponible':
+            return `alquileres/registrar.php?idhabitacion=${habitacion.idhabitacion}`;
+          case 'ocupado':
+            return `views/editar.php?idhabitacion=${habitacion.idhabitacion}`;
+          default:
+            return '#';
+        }
+      }
+
+      function getTextoAccion(estado) {
+        switch (estado.toLowerCase()) {
+          case 'disponible':
+            return 'Asignar habitación';
+          case 'ocupado':
+            return 'Ver detalle';
+          case 'mantenimiento':
+            return 'En mantenimiento';
+          default:
+            return 'Consultar';
+        }
+      }
+
+      function mostrarError() {
+        const container = document.getElementById("habitaciones-container");
+        container.innerHTML = `
+        <div class="col-12">
+          <div class="alert alert-danger">
+            Error al cargar las habitaciones. Por favor, intente nuevamente.
+          </div>
+        </div>`;
+      }
     });
   </script>
 
+
   <script>
+    const dataTableLanguage = {
+      search: "Buscar:",
+      lengthMenu: "Mostrar _MENU_ registros",
+      info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+      paginate: {
+        first: "Primero",
+        last: "Último",
+        next: "Siguiente",
+        previous: "Anterior"
+      },
+      zeroRecords: "No se encontraron registros coincidentes",
+      infoEmpty: "Mostrando 0 a 0 de 0 registros",
+      infoFiltered: "(filtrado de _MAX_ registros en total)"
+    };
+
+    // Inicialización global para tablas cargadas directamente
+    new DataTable('#tablaClientes', {
+      dom: 'Bfrtip',
+      buttons: [{
+        extend: 'csvHtml5',
+        text: 'Exportar a CSV',
+        title: 'clientes'
+      }],
+      language: dataTableLanguage
+    });
+
+    new DataTable('#tablaPersonas', {
+      dom: 'Bfrtip',
+      buttons: [{
+        extend: 'csvHtml5',
+        text: 'Exportar a CSV',
+        title: 'personas'
+      }],
+      language: dataTableLanguage
+    });
+
+    // Para tablas cargadas por AJAX
     document.addEventListener("DOMContentLoaded", () => {
       const navbarOptions = document.querySelectorAll("#navbar-options .nav-link");
 
       navbarOptions.forEach(enlace => {
-        enlace.addEventListener("click", function (event) {
+        enlace.addEventListener("click", function(event) {
           const destino = event.target.closest("a").getAttribute("data-vista");
 
           if (destino) {
             fetch(destino, {
-              method: 'GET'
-            })
+                method: 'GET'
+              })
               .then(response => response.text())
               .then(data => {
                 document.querySelector("#contenido").innerHTML = data;
 
-                // Esperamos un poco para asegurarnos que la tabla ya se renderizó
                 setTimeout(() => {
-                  const tabla = document.querySelector("#tablaClientes");
-                  if (tabla) {
-                    new DataTable(tabla, {
-                      language: {
-                        search: "Buscar:",
-                        lengthMenu: "Mostrar _MENU_ registros",
-                        info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                        paginate: {
-                          first: "Primero",
-                          last: "Último",
-                          next: "Siguiente",
-                          previous: "Anterior"
-                        },
-                        zeroRecords: "No se encontraron registros coincidentes",
-                        infoEmpty: "Mostrando 0 a 0 de 0 registros",
-                        infoFiltered: "(filtrado de _MAX_ registros en total)"
-                      }
+                  const tablaClientes = document.querySelector("#tablaClientes");
+                  if (tablaClientes) {
+                    new DataTable(tablaClientes, {
+                      dom: 'Bfrtip',
+                      buttons: [{
+                        extend: 'csvHtml5',
+                        text: 'Exportar a CSV',
+                        title: 'clientes'
+                      }],
+                      language: dataTableLanguage
                     });
                   }
-                }, 0); // Tiempo mínimo de espera
+                  const tablaPersonas = document.querySelector("#tablaPersonas");
+                  if (tablaPersonas) {
+                    new DataTable(tablaPersonas, {
+                      dom: 'Bfrtip',
+                      buttons: [{
+                        extend: 'csvHtml5',
+                        text: 'Exportar a CSV',
+                        title: 'personas'
+                      }],
+                      language: dataTableLanguage
+                    });
+                  }
+                }, 0);
               })
               .catch(error => console.error("Error al cargar la vista:", error));
           }
@@ -353,23 +635,52 @@ $conn = null;
     });
   </script>
 
+  <!-- Modal Detalle Habitación -->
+  <div class="modal fade" id="modalDetalleHabitacion" tabindex="-1" role="dialog" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalDetalleLabel">Detalle de Habitación</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Habitación:</strong> <span id="detalle-numero"></span></p>
+          <p><strong>Cliente:</strong> <span id="detalle-cliente"></span></p>
+          <p><strong>Hora de inicio:</strong> <span id="detalle-inicio"></span></p>
+          <p><strong>Hora de fin:</strong> <span id="detalle-fin"></span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /Modal Detalle Habitación -->
+
   <script>
-    new DataTable('#tablaClientes', {
-      dom: 'Bfrtip',
-      buttons: [
-        {
-          extend: 'csvHtml5',
-          text: 'Exportar a CSV',
-          title: 'clientes'
-        }
-      ],
-      language: {
-        url: "//cdn.datatables.net/plug-ins/2.0.3/i18n/es-ES.json"
-      }
+function mostrarDetalleHabitacion(idhabitacion) {
+  // Limpia los campos
+  document.getElementById('detalle-numero').textContent = '';
+  document.getElementById('detalle-cliente').textContent = '';
+  document.getElementById('detalle-inicio').textContent = '';
+  document.getElementById('detalle-fin').textContent = '';
+
+  fetch(`menu/detalle_habitacion.php?idhabitacion=${idhabitacion}`)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('detalle-numero').textContent = data.numero || '';
+      document.getElementById('detalle-cliente').textContent = data.cliente || '';
+      document.getElementById('detalle-inicio').textContent = data.inicio || '';
+      document.getElementById('detalle-fin').textContent = data.fin || '';
+      $('#modalDetalleHabitacion').modal('show');
+    })
+    .catch(() => {
+      alert('No se pudo obtener el detalle de la habitación.');
     });
-  </script>
-
-
+}
+</script>
 </body>
 
 </html>

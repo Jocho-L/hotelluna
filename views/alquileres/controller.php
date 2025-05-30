@@ -1,6 +1,6 @@
 <?php
 // Incluir el archivo de conexión
-require_once __DIR__ . '/../../config/Conexion.php';
+require_once(__DIR__ . '/../../app/config/Conexion.php');
 
 // Verificar que se haya pasado el idhabitacion
 if (isset($_GET['idhabitacion'])) {
@@ -13,7 +13,7 @@ if (isset($_GET['idhabitacion'])) {
 $conexion = Conexion::getConexion();
 
 // Consultar la base de datos para obtener los detalles de la habitación
-$sql = "SELECT idhabitacion, numero, precioregular, precioempresarial, precioferiado, estado 
+$sql = "SELECT idhabitacion, numero, precioregular, estado 
         FROM habitaciones WHERE idhabitacion = :idhabitacion";
 $stmt = $conexion->prepare($sql);
 $stmt->bindParam(':idhabitacion', $idhabitacion, PDO::PARAM_INT);
@@ -35,53 +35,95 @@ $estado = $habitacion['estado'];
 $idhabitacion = $habitacion['idhabitacion'];
 
 // Verificar si se ha enviado el formulario
-// Verificar si se ha enviado el formulario
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Recoger los datos del formulario
     $fechainicio = $_POST['fechainicio'];
     $fechafin = $_POST['fechafin'];
     $observaciones = $_POST['observaciones'];
     $modalidadpago = $_POST['modalidadpago'];
-    $descuento = $_POST['descuento'];
-    $total = $_POST['total'];  // El total calculado en el formulario
-    $lugarprocedencia = $_POST['lugarprocedencia'];  // Nuevo campo Lugar de procedencia
+    $total = $_POST['total'];
+    $lugarprocedencia = $_POST['lugarprocedencia'];
+    $incluyedesayuno = isset($_POST['incluyedesayuno']) ? 1 : 0;
+    $idcliente = $_POST['idcliente'];
+    $idmediopago = isset($_POST['idmediopago']) ? $_POST['idmediopago'] : null; // <-- Nuevo
 
-    // Asegurarse de que haya un cliente seleccionado
-    $idcliente = $_POST['idcliente'];  // Este campo lo deberías obtener de alguna forma, como buscar por DNI o seleccionando un cliente
+    session_start();
+    if (!isset($_SESSION['idusuario'])) {
+        echo "Debe iniciar sesión para registrar un alquiler.";
+        die();
+    }
+    $idusuarioentrada = $_SESSION['idusuario'];
 
     if (!$idcliente) {
         echo "Debe seleccionar un cliente para proceder.";
         die();
     }
 
-    // Comenzamos la transacción
+    // Verificar si la persona ya es cliente
+    $stmt = $conexion->prepare("SELECT idcliente FROM clientes WHERE idpersona = ?");
+    $stmt->execute([$idcliente]);
+    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($cliente) {
+        $idcliente_db = $cliente['idcliente'];
+    } else {
+        // Insertar como cliente
+        $stmt = $conexion->prepare("INSERT INTO clientes (idpersona) VALUES (?)");
+        $stmt->execute([$idcliente]);
+        $idcliente_db = $conexion->lastInsertId();
+    }
+
     $conexion->beginTransaction();
     try {
-        // Insertar el alquiler en la base de datos
-        $sql = "INSERT INTO alquileres (idcliente, idhabitacion, fechahorainicio, fechahorafin, valoralquiler, modalidadpago, observaciones, lugarprocedencia)
-                VALUES (:idcliente, :idhabitacion, :fechainicio, :fechafin, :total, :modalidadpago, :observaciones, :lugarprocedencia)";
+        // Registrar el alquiler
+        $sql = "INSERT INTO alquileres 
+            (idcliente, idhabitacion, idusuarioentrada, fechahorainicio, fechahorafin, valoralquiler, modalidadpago, idmediopago, observaciones, lugarprocedencia, incluyedesayuno)
+            VALUES 
+            (:idcliente, :idhabitacion, :idusuarioentrada, :fechainicio, :fechafin, :total, :modalidadpago, :idmediopago, :observaciones, :lugarprocedencia, :incluyedesayuno)";
         $stmt = $conexion->prepare($sql);
-        $stmt->bindParam(':idcliente', $idcliente, PDO::PARAM_INT);
+        $stmt->bindParam(':idcliente', $idcliente_db, PDO::PARAM_INT);
         $stmt->bindParam(':idhabitacion', $idhabitacion, PDO::PARAM_INT);
+        $stmt->bindParam(':idusuarioentrada', $idusuarioentrada, PDO::PARAM_INT);
         $stmt->bindParam(':fechainicio', $fechainicio);
         $stmt->bindParam(':fechafin', $fechafin);
         $stmt->bindParam(':total', $total, PDO::PARAM_STR);
         $stmt->bindParam(':modalidadpago', $modalidadpago);
+        $stmt->bindParam(':idmediopago', $idmediopago, PDO::PARAM_INT);
         $stmt->bindParam(':observaciones', $observaciones);
-        $stmt->bindParam(':lugarprocedencia', $lugarprocedencia);  // Vinculamos el nuevo campo
-
-        // Ejecutar la consulta para registrar el alquiler
+        $stmt->bindParam(':lugarprocedencia', $lugarprocedencia);
+        $stmt->bindParam(':incluyedesayuno', $incluyedesayuno, PDO::PARAM_BOOL);
         $stmt->execute();
 
-        // Confirmar la transacción
-        $conexion->commit();
+        // Obtener el ID del alquiler registrado ANTES de cualquier otro insert
+        $idalquiler = $conexion->lastInsertId();
 
-        echo "El alquiler se registró correctamente.";
+        // Registrar al cliente como huésped tipo "cliente"
+        $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped) VALUES (?, ?, 'cliente')");
+        $stmt->execute([$idalquiler, $idcliente]);
+
+        // Registrar acompañantes como huéspedes tipo "acompañante"
+        if (!empty($_POST['acompanantes_json'])) {
+            $acompanantes = json_decode($_POST['acompanantes_json'], true);
+            foreach ($acompanantes as $idpersonaAcompanante) {
+                // Evita registrar al cliente principal como acompañante
+                if ($idpersonaAcompanante == $idcliente) continue;
+                $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped, observaciones) VALUES (?, ?, 'acompañante', 'acompañante')");
+                $stmt->execute([$idalquiler, $idpersonaAcompanante]);
+            }
+        }
+
+        // Cambiar el estado de la habitación a 'ocupada'
+        $sqlUpdate = "UPDATE habitaciones SET estado = 'ocupada' WHERE idhabitacion = :idhabitacion";
+        $stmtUpdate = $conexion->prepare($sqlUpdate);
+        $stmtUpdate->bindParam(':idhabitacion', $idhabitacion, PDO::PARAM_INT);
+        $stmtUpdate->execute();
+
+        $conexion->commit();
+        echo "El alquiler se registró correctamente, la habitación fue marcada como ocupada, y el cliente fue registrado como huésped.";
+        header("Location: /hotelluna/views/index.php?mensaje=Cliente registrado exitosamente.");
+        exit;
     } catch (Exception $e) {
-        // Si ocurre un error, deshacer la transacción
         $conexion->rollBack();
         echo "Error al registrar el alquiler: " . $e->getMessage();
     }
 }
-
-?>

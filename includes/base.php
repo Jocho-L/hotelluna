@@ -1,3 +1,15 @@
+<?php
+session_start();
+include('../../app/config/Conexion.php');
+$conn = Conexion::getConexion();
+$conn = null;
+
+if (!isset($_SESSION['idusuario'])) {
+  header("Location: ../../index.php");
+  exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -121,7 +133,7 @@
             <img src="/hotelluna/public/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
           </div>
           <div class="info">
-            <a href="#" class="d-block">Alexander Pierce</a>
+              <a class="d-block"><?= $_SESSION['nombres'] . " " . $_SESSION['apellidos'] ?> (<?= $_SESSION['rol'] ?>)</a>
           </div>
         </div>
 
@@ -192,7 +204,7 @@
       <!-- /.content-header -->
 
       <!-- Main content -->
-      <!-- 
+      <!--
         Iconos para los paneles de HABITACIONES
         https://themeon.net/nifty/v2.9.1/icons-ionicons.html
         -->

@@ -27,10 +27,12 @@ include('../../app/controllers/AlquilerController.php');
     <div class="row justify-content-center">
       <div class="col-lg-10">
         <div class="card border border-secondary shadow rounded p-4">
-          <form>
+          <form id="formAlquiler" method="POST" action="controller.php?idhabitacion=<?= $habitacion['idhabitacion'] ?>">
             <div class="card mb-4">
               <div class="card-header">
-                <h4>Detalles de la Habitación <strong><?= htmlspecialchars($habitacion['numero']) ?></strong> </h4>
+                <h4>Detalles de la Habitación <strong>
+                    <?= isset($habitacion) && $habitacion ? htmlspecialchars($habitacion['numero']) : 'No seleccionada' ?>
+                  </strong></h4>
               </div>
               <div class="card-body"> <!-- Detalles habitacion -->
                 <?php if ($habitacion): ?>
@@ -58,44 +60,22 @@ include('../../app/controllers/AlquilerController.php');
 
               <div class="col-md-9 mb-4"> <!-- Buscar Cliente -->
                 <label class="form-label">Buscar Cliente</label>
-                <select class="form-control" id="buscar_cliente" name="idcliente" style="width: 100%;">
-                </select>
+                <select class="form-control" id="buscar_cliente" style="width: 100%;"></select>
+                <input type="hidden" id="idcliente" name="idcliente" />
               </div>
 
               <div class="col-md-3 d-flex align-items-end mb-4"> <!-- Agregar Cliente -->
                 <a href="../clientes/registrar.php" class="btn btn-success w-100">Agregar Cliente</a>
               </div>
 
-              <div class="col-12 mb-3" id="cliente-info" style="display: none;"> <!-- Detalles Cliente -->
-                <p><strong>Nombres:</strong> <span id="nombre_cliente"></span></p>
-                <p><strong>Apellidos:</strong> <span id="apellido_cliente"></span></p>
-                <input type="hidden" name="idcliente" id="idcliente">
-              </div>
-
-              <div class="col-md-9 mb-4">  <!-- Acompañante -->
-                <label class="form-label">Acompañante</label>
-                <!-- Botón para abrir modal -->
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".bd-example-modal-lg">
-                  +
-                </button>
-              </div>
-
-              <!-- Modal -->
-              <div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                  <div class="modal-content">
-                    <div class="row">
-                      <div class="col-md-12">
-                        <div class="content"> <!-- Contenido principal -->
-                          <?php
-                            include('../huespedes/registrar.php');
-                          ?>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <div class="col-md-9 mb-4">
+                <label class="form-label">Acompañantes</label>
+                <div id="acompanantes-container">
+                  <!-- Aquí se agregan los selects dinámicamente -->
                 </div>
+                <button type="button" class="btn btn-primary mt-2" id="agregar-acompanante">+</button>
               </div>
+              <input type="hidden" name="acompanantes_json" id="acompanantes_json">
 
               <div class="col-md-6 mb-3"> <!-- Fecha de Inicio -->
                 <label class="form-label">Fecha de Inicio</label>
@@ -159,8 +139,17 @@ include('../../app/controllers/AlquilerController.php');
                 <input type="text" class="form-control" name="total" id="total" readonly>
               </div>
 
+              <!-- Incluye desayuno -->
+              <div class="col-md-6 mb-3 d-flex align-items-center">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="incluyedesayuno" id="incluyedesayuno" value="1">
+                  <label class="form-check-label" for="incluyedesayuno">
+                    Incluye desayuno
+                  </label>
+                </div>
+              </div>
+
               <div class="col-12"> <!-- BTN Asignar Habitación -->
-                <input type="hidden" name="idcliente" value="">
                 <button type="submit" class="btn btn-primary">Asignar Habitación</button>
               </div>
             </div>
@@ -187,7 +176,7 @@ include('../../app/controllers/AlquilerController.php');
       theme: "classic",
       placeholder: 'Busca por nombre o DNI...',
       ajax: {
-        url: '../../app/controllers/BuscarCliente.php',
+        url: '../../app/controllers/BuscarPersona.php', // Cambiado a personas
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -200,10 +189,11 @@ include('../../app/controllers/AlquilerController.php');
           return {
             results: $.map(data, function(item) {
               return {
-                id: item.idcliente,
-                text: item.dni + ' - ' + item.nombres + ' ' + item.apellidos,
+                id: item.idpersona,
+                text: item.numerodoc + ' - ' + item.nombres + ' ' + item.apellidos,
                 nombres: item.nombres,
-                apellidos: item.apellidos
+                apellidos: item.apellidos,
+                numerodoc: item.numerodoc
               };
             })
           };
@@ -214,9 +204,7 @@ include('../../app/controllers/AlquilerController.php');
 
     $('#buscar_cliente').on('select2:select', function(e) {
       var data = e.params.data;
-      $('#nombre_cliente').text(data.nombres);
-      $('#apellido_cliente').text(data.apellidos);
-      $('#idcliente').val(data.id);
+      $('#idcliente').val(data.id); // Ahora guarda idpersona
       $('#cliente-info').show();
     });
   });
@@ -233,31 +221,106 @@ include('../../app/controllers/AlquilerController.php');
 </script>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  function calcularTotal() {
+    const inicio = new Date(document.querySelector('input[name="fechainicio"]').value);
+    const fin = new Date(document.getElementById('fechafin').value);
+    const dias = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+    const precio = <?= $habitacion['precioregular'] ?>;
+    if (dias > 0) {
+      document.getElementById('total').value = (precio * dias).toFixed(2);
+    }
+  }
 
-    const maxDate = new Date(today);
-    maxDate.setMonth(maxDate.getMonth() + 2);
-
-    const formatDateTimeLocal = (date) => {
-      const pad = (n) => n.toString().padStart(2, '0');
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    };
-
-    // Establece la fecha actual como inicio
-    const fechainicioInput = document.querySelector('input[name="fechainicio"]');
-    fechainicioInput.value = formatDateTimeLocal(today);
-
-    // Restringe la fecha de fin
-    const fechafinInput = document.getElementById('fechafin');
-    fechafinInput.min = formatDateTimeLocal(tomorrow);
-    fechafinInput.max = formatDateTimeLocal(maxDate);
-  });
+  document.getElementById('fechafin').addEventListener('change', calcularTotal);
 </script>
 
+<script>
+let acompanantes = [];
+
+function crearSelectAcompanante(index) {
+  return `
+    <div class="input-group mb-2 acompanante-select-row" data-index="${index}">
+      <select class="form-control select2-acompanante" name="acompanante[]" style="width: 90%;" required></select>
+      <div class="input-group-append">
+        <button class="btn btn-danger btn-quitar-acompanante" type="button" title="Quitar"><span>&times;</span></button>
+      </div>
+    </div>
+  `;
+}
+
+function inicializarSelect2Acompanante($select) {
+  $select.select2({
+    theme: "classic",
+    placeholder: 'Busca por nombre o DNI...',
+    ajax: {
+      url: '../../app/controllers/BuscarPersona.php',
+      type: 'POST',
+      dataType: 'json',
+      delay: 250,
+      data: function(params) {
+        return { searchTerm: params.term };
+      },
+      processResults: function(data) {
+        return {
+          results: $.map(data, function(item) {
+            return {
+              id: item.idpersona,
+              text: item.numerodoc + ' - ' + item.nombres + ' ' + item.apellidos,
+              nombres: item.nombres,
+              apellidos: item.apellidos,
+              numerodoc: item.numerodoc
+            };
+          })
+        };
+      },
+      cache: true
+    }
+  });
+}
+
+$(document).ready(function() {
+  // Agrega el primer select al cargar
+  let index = 0;
+  function agregarNuevoAcompanante() {
+    $('#acompanantes-container').append(crearSelectAcompanante(index));
+    let $nuevoSelect = $('#acompanantes-container .acompanante-select-row:last .select2-acompanante');
+    inicializarSelect2Acompanante($nuevoSelect);
+    index++;
+  }
+
+  agregarNuevoAcompanante();
+
+  $('#agregar-acompanante').click(function() {
+    agregarNuevoAcompanante();
+  });
+
+  // Quitar acompañante
+  $('#acompanantes-container').on('click', '.btn-quitar-acompanante', function() {
+    $(this).closest('.acompanante-select-row').remove();
+  });
+
+  // Al enviar el formulario, recolecta los idpersona seleccionados
+  $('#formAlquiler').on('submit', function(e) {
+    // Validar cliente seleccionado
+    if (!$('#idcliente').val()) {
+      alert("Por favor seleccione un cliente.");
+      e.preventDefault();
+      return;
+    }
+    let ids = [];
+    let idcliente = $('#idcliente').val();
+    $('.select2-acompanante').each(function() {
+      let val = $(this).val();
+      // Evita agregar el cliente principal como acompañante
+      if (val && val !== idcliente) ids.push(val);
+    });
+    $('#acompanantes_json').val(JSON.stringify(ids));
+    $('button[type="submit"]').prop('disabled', true); // Desactivar el botón
+  });
+});
+</script>
 
 <?php
+$idpersona = isset($_POST['idcliente']) ? intval($_POST['idcliente']) : null;
 include('../../includes/footer.php');
 ?>

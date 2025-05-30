@@ -10,10 +10,16 @@ class Habitacion {
 
     public function getAllHabitaciones(): array {
         try {
-            $sql = "SELECT h.idhabitacion, h.numero, t.tipohabitacion AS tipo, h.estado, h.precioregular AS precio 
+            $sql = "SELECT 
+                        h.idhabitacion, 
+                        h.numero, 
+                        t.tipohabitacion AS tipo, 
+                        h.estado, 
+                        h.precioregular AS precio,
+                        h.piso
                     FROM habitaciones h 
                     JOIN tipohabitaciones t ON h.idtipohabitacion = t.idtipohabitacion 
-                    ORDER BY h.numero ASC";
+                    ORDER BY h.piso ASC, h.numero ASC";
                     
             $consulta = $this->conexion->prepare($sql);
             $consulta->execute();
