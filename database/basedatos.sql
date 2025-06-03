@@ -43,7 +43,7 @@ CREATE TABLE personas (
     tipodoc VARCHAR(10) NOT NULL,
     numerodoc VARCHAR(9) NOT NULL UNIQUE,
     apellidos VARCHAR(100) NOT NULL,
-    genero ENUM('masculino', 'femenino', 'otro') NOT NULL,
+    genero ENUM('masculino', 'femenino') NOT NULL,
     nombres VARCHAR(100) NOT NULL,
     telefono CHAR(9) UNIQUE,
     fechanac DATE NOT NULL

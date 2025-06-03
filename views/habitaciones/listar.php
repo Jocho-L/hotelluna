@@ -51,8 +51,8 @@
               $conn = Conexion::getConexion();
 
               // Consulta SQL para obtener las habitaciones
-              $sql = "SELECT h.idhabitacion, t.tipohabitacion, h.numero, h.piso, h.numcamas, h.precioregular 
-                      FROM habitaciones h 
+              $sql = "SELECT h.idhabitacion, t.tipohabitacion, h.numero, h.piso, h.numcamas, h.precioregular
+                      FROM habitaciones h
                       JOIN tipohabitaciones t ON h.idtipohabitacion = t.idtipohabitacion";
               $result = $conn->query($sql);
 

@@ -1,19 +1,21 @@
 <?php
 // Incluir el archivo de conexión
 require_once(__DIR__ . '/../../app/config/Conexion.php');
-
-// Verificar que se haya pasado el idhabitacion
-if (isset($_GET['idhabitacion'])) {
-    $idhabitacion = (int)$_GET['idhabitacion'];  // Aseguramos que sea un valor entero
-} else {
-    die("No se especificó un ID de habitación.");
-}
-
-// Usar la clase Conexion para obtener la conexión
 $conexion = Conexion::getConexion();
 
+// Solo pedir idhabitacion si NO es un POST de checkout
+if (
+    $_SERVER['REQUEST_METHOD'] !== 'POST' ||
+    (isset($_POST['accion']) && $_POST['accion'] !== 'checkout')
+) {
+    if (!isset($_GET['idhabitacion'])) {
+        die("No se especificó un ID de habitación.");
+    }
+    $idhabitacion = (int)$_GET['idhabitacion'];  // Aseguramos que sea un valor entero
+}
+
 // Consultar la base de datos para obtener los detalles de la habitación
-$sql = "SELECT idhabitacion, numero, precioregular, estado 
+$sql = "SELECT idhabitacion, numero, precioregular, estado
         FROM habitaciones WHERE idhabitacion = :idhabitacion";
 $stmt = $conexion->prepare($sql);
 $stmt->bindParam(':idhabitacion', $idhabitacion, PDO::PARAM_INT);
@@ -76,9 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $conexion->beginTransaction();
     try {
         // Registrar el alquiler
-        $sql = "INSERT INTO alquileres 
+        $sql = "INSERT INTO alquileres
             (idcliente, idhabitacion, idusuarioentrada, fechahorainicio, fechahorafin, valoralquiler, modalidadpago, idmediopago, observaciones, lugarprocedencia, incluyedesayuno)
-            VALUES 
+            VALUES
             (:idcliente, :idhabitacion, :idusuarioentrada, :fechainicio, :fechafin, :total, :modalidadpago, :idmediopago, :observaciones, :lugarprocedencia, :incluyedesayuno)";
         $stmt = $conexion->prepare($sql);
         $stmt->bindParam(':idcliente', $idcliente_db, PDO::PARAM_INT);
@@ -125,5 +127,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } catch (Exception $e) {
         $conexion->rollBack();
         echo "Error al registrar el alquiler: " . $e->getMessage();
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'checkout') {
+    session_start();
+    if (!isset($_SESSION['idusuario'])) {
+        echo "Debe iniciar sesión para hacer check-out.";
+        die();
+    }
+    $idalquiler = intval($_POST['idalquiler']);
+    $idusuariosalida = $_SESSION['idusuario'];
+
+    // Obtener la habitación asociada al alquiler
+    $sql = "SELECT idhabitacion FROM alquileres WHERE idalquiler = ?";
+    $stmt = $conexion->prepare($sql);
+    $stmt->execute([$idalquiler]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $idhabitacion = $row ? $row['idhabitacion'] : null;
+
+    if ($idhabitacion) {
+        // Cambiar estado de la habitación a 'mantenimiento'
+        $sql = "UPDATE habitaciones SET estado = 'disponible' WHERE idhabitacion = ?"; //cambiar a 'disponible' o 'mantenimiento' según tu lógica
+        $stmt = $conexion->prepare($sql);
+        $stmt->execute([$idhabitacion]);
+
+        // Actualizar idusuariosalida y fechahorafin en alquileres
+        $sql = "UPDATE alquileres SET idusuariosalida = ?, fechahorafin = NOW() WHERE idalquiler = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->execute([$idusuariosalida, $idalquiler]);
+
+        header("Location: detalle.php?idhabitacion=$idhabitacion");
+        exit;
+    } else {
+        header("Location: index.php?error=No se encontró la habitación");
+        exit;
     }
 }

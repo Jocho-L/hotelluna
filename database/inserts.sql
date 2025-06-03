@@ -71,6 +71,7 @@ VALUES ('DNI', '72015783', 'HERNANDEZ SARAVIA', 'masculino', 'JOSE MANUEL', '999
 
 -- 2. Insertar rol (si aún no existe)
 INSERT INTO roles (rol) VALUES ('Administrador');
+INSERT INTO roles (rol) VALUES ('Recepcionista');
 -- 3. Insertar usuario
 INSERT INTO usuarios (idpersona, idrol, username, password, estado)
 VALUES (1, 1, 'jm', 'admin', 'activo');

@@ -140,8 +140,7 @@ if (!isset($_SESSION['idusuario'])) {
         <!-- Sidebar Menu -->
         <nav class="mt-2" id="navbar-options">
           <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-            <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
+            <!-- Módulos comunes -->
             <li class="nav-item menu-open">
               <a href="#" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -153,11 +152,26 @@ if (!isset($_SESSION['idusuario'])) {
               <ul class="nav nav-treeview">
                 <li class="nav-item">
                   <a href="#" data-vista="habitaciones/listar.php" class="nav-link">
-                    <!-- la clase active, diferente el elemento -->
                     <i class="far fa-circle nav-icon"></i>
                     <p>Habitaciones</p>
                   </a>
                 </li>
+                <!-- Solo para Administrador -->
+                <?php if ($_SESSION['rol'] === 'Administrador'): ?>
+                <li class="nav-item">
+                  <a href="#" data-vista="usuarios/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Usuarios</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" data-vista="empresas/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Empresas</p>
+                  </a>
+                </li>
+                <?php endif; ?>
+                <!-- Otros módulos accesibles por ambos roles -->
                 <li class="nav-item">
                   <a href="#" data-vista="clientes/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
@@ -165,21 +179,21 @@ if (!isset($_SESSION['idusuario'])) {
                   </a>
                 </li>
                 <li class="nav-item">
+                  <a href="#" data-vista="alquileres/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Alquileres</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" data-vista="personas/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Personas</p>
+                  </a>
+                </li>
+                <li class="nav-item">
                   <a href="#" data-vista="reservas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Reservas</p>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a href="#" data-vista="colaboradores/listar.php" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>Colaboradores</p>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a href="#" data-vista="empresas/listar.php" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>Empresas</p>
                   </a>
                 </li>
               </ul>
@@ -189,6 +203,9 @@ if (!isset($_SESSION['idusuario'])) {
                 <i class="nav-icon fas fa-th"></i>
                 <p>Reportes</p>
               </a>
+            </li>
+            <li>
+              <p><a href="../logout.php">Cerrar sesión</a></p>
             </li>
           </ul>
         </nav>

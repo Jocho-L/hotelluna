@@ -1,7 +1,16 @@
 <?php
 include('../../includes/base.php');
+require_once('../../app/config/Conexion.php');
+require_once('../../app/models/Alquiler.php');
 include('../../app/controllers/AlquilerController.php');
-/* include('../../controllers/BuscarCliente.php'); */
+
+$idhabitacion = isset($_GET['idhabitacion']) ? intval($_GET['idhabitacion']) : null;
+$habitacion = null;
+
+if ($idhabitacion) {
+    $conexion = Conexion::getConexion();
+    $habitacion = obtenerHabitacionPorId($conexion, $idhabitacion);
+}
 ?>
 
 <!-- ZONA: Cabecera -->
@@ -79,7 +88,7 @@ include('../../app/controllers/AlquilerController.php');
 
               <div class="col-md-6 mb-3"> <!-- Fecha de Inicio -->
                 <label class="form-label">Fecha de Inicio</label>
-                <input type="text" class="form-control" name="fechainicio" readonly>
+                <input type="datetime-local" class="form-control" name="fechainicio" id="fechainicio" required readonly>
               </div>
 
               <div class="col-md-6 mb-3"> <!-- Fecha de Fin -->
@@ -221,13 +230,44 @@ include('../../app/controllers/AlquilerController.php');
 </script>
 
 <script>
+  function addMonths(date, months) {
+    let d = new Date(date);
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const local = now.toISOString().slice(0,16);
+    const maxDate = addMonths(now, 2).toISOString().slice(0,16);
+
+    // Fecha de inicio: bloqueada al día/hora actual
+    const fechainicio = document.getElementById('fechainicio');
+    fechainicio.value = local;
+    fechainicio.min = local;
+    fechainicio.max = local;
+    fechainicio.readOnly = true;
+
+    // Fecha de fin: no puede ser anterior a ahora, máximo dos meses
+    const fechafin = document.getElementById('fechafin');
+    fechafin.min = local;
+    fechafin.max = maxDate;
+    fechafin.value = local;
+  });
+
   function calcularTotal() {
-    const inicio = new Date(document.querySelector('input[name="fechainicio"]').value);
+    const inicio = new Date(document.getElementById('fechainicio').value);
     const fin = new Date(document.getElementById('fechafin').value);
-    const dias = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
     const precio = <?= $habitacion['precioregular'] ?>;
-    if (dias > 0) {
-      document.getElementById('total').value = (precio * dias).toFixed(2);
+    if (!isNaN(inicio) && !isNaN(fin) && fin > inicio) {
+      const dias = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+      if (dias > 0) {
+        document.getElementById('total').value = (precio * dias).toFixed(2);
+      } else {
+        document.getElementById('total').value = '';
+      }
+    } else {
+      document.getElementById('total').value = '';
     }
   }
 

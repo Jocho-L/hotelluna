@@ -1,29 +1,38 @@
 <?php
 class ApiDni
 {
-  private static $token = 'josemhs_dg2790ahxp1z';
+    public static function buscarPorDni($dni)
+    {
+        $token = 'apis-token-15494.AzUyCGX6RWbcWUFSj0QirF0A4xkMGZw1'; // Reemplaza con tu token de apis.net.pe
+        $url = "https://api.apis.net.pe/v1/dni?numero=$dni";
 
-  public static function buscarPorDni($dni)
-  {
-    $curl = curl_init();
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer $token"
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
 
-    curl_setopt_array($curl, array(
-      CURLOPT_URL => 'http://go.net.pe:3000/api/v2/dni/' . $dni,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_CUSTOMREQUEST => 'GET',
-      CURLOPT_HTTPHEADER => array(
-        'Authorization: Bearer ' . self::$token
-      ),
-    ));
+        if ($response === false) {
+            return ['success' => false, 'error' => 'No se pudo conectar a la API'];
+        }
 
-    $response = curl_exec($curl);
-    $error = curl_error($curl);
-    curl_close($curl);
+        $data = json_decode($response, true);
 
-    if ($error) {
-      return ['error' => $error];
+        if (isset($data['numeroDocumento'])) {
+            // Adaptar la estructura para que tu controlador la entienda
+            return [
+                'data' => [
+                    'nombres' => $data['nombres'] ?? '',
+                    'apellido_paterno' => $data['apellidoPaterno'] ?? '',
+                    'apellido_materno' => $data['apellidoMaterno'] ?? '',
+                    'fecha_nacimiento' => $data['fechaNacimiento'] ?? '',
+                    'sexo' => $data['sexo'] ?? ''
+                ]
+            ];
+        } else {
+            return ['success' => false, 'error' => 'No se encontró el DNI'];
+        }
     }
-
-    return json_decode($response, true);
-  }
 }

@@ -8,6 +8,15 @@ if (!isset($_SESSION['idusuario'])) {
   header("Location: ../index.php");
   exit;
 }
+
+// Definir roles permitidos para esta vista
+$roles_permitidos = ['Administrador', 'Recepcionista']; // Cambia según la vista
+
+if (!in_array($_SESSION['rol'], $roles_permitidos)) {
+  // Si el rol no está permitido, redirige o muestra mensaje
+  header("Location: ../acceso_denegado.php");
+  exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -34,8 +43,6 @@ if (!isset($_SESSION['idusuario'])) {
 </head>
 
 <body class="hold-transition sidebar-mini">
-
-
 
   <div class="wrapper">
     <!-- Navbar -->
@@ -142,8 +149,7 @@ if (!isset($_SESSION['idusuario'])) {
         <!-- Sidebar Menu -->
         <nav class="mt-2" id="navbar-options">
           <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-            <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
+            <!-- Módulos comunes -->
             <li class="nav-item menu-open">
               <a href="#" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -155,15 +161,36 @@ if (!isset($_SESSION['idusuario'])) {
               <ul class="nav nav-treeview">
                 <li class="nav-item">
                   <a href="#" data-vista="habitaciones/listar.php" class="nav-link">
-                    <!-- la clase active, diferente el elemento -->
                     <i class="far fa-circle nav-icon"></i>
                     <p>Habitaciones</p>
                   </a>
                 </li>
+                <!-- Solo para Administrador -->
+                <?php if ($_SESSION['rol'] === 'Administrador'): ?>
+                <li class="nav-item">
+                  <a href="#" data-vista="usuarios/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Usuarios</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" data-vista="empresas/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Empresas</p>
+                  </a>
+                </li>
+                <?php endif; ?>
+                <!-- Otros módulos accesibles por ambos roles -->
                 <li class="nav-item">
                   <a href="#" data-vista="clientes/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Clientes</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" data-vista="alquileres/listar.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Alquileres</p>
                   </a>
                 </li>
                 <li class="nav-item">
@@ -176,18 +203,6 @@ if (!isset($_SESSION['idusuario'])) {
                   <a href="#" data-vista="reservas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Reservas</p>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a href="#" data-vista="colaboradores/listar.php" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>Colaboradores</p>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a href="#" data-vista="empresas/listar.php" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>Empresas</p>
                   </a>
                 </li>
               </ul>
@@ -324,6 +339,15 @@ if (!isset($_SESSION['idusuario'])) {
   <!-- DataTables v2 JS -->
   <script src="https://cdn.datatables.net/v/dt/dt-2.0.3/datatables.min.js"></script>
 
+  <!-- DataTables por tabla -->
+  <script src="../public/js/datatables/clientes.js"></script>
+  <script src="../public/js/datatables/personas.js"></script>
+  <script src="../public/js/datatables/alquileres.js"></script>
+
+<!-- cargar ajax de vistas del menú lateral y inicializar DataTables -->
+  <script src="../public/js/cargar_ajax.js"></script>
+
+  <!-- /* Filtros de habitaciones */ -->
   <script>
     /* Filtros de habitaciones */
     document.addEventListener("DOMContentLoaded", () => {
@@ -516,7 +540,7 @@ if (!isset($_SESSION['idusuario'])) {
           case 'disponible':
             return `alquileres/registrar.php?idhabitacion=${habitacion.idhabitacion}`;
           case 'ocupado':
-            return `views/editar.php?idhabitacion=${habitacion.idhabitacion}`;
+            return `alquileres/detalle.php?idhabitacion=${habitacion.idhabitacion}`;
           default:
             return '#';
         }
@@ -547,94 +571,6 @@ if (!isset($_SESSION['idusuario'])) {
     });
   </script>
 
-
-  <script>
-    const dataTableLanguage = {
-      search: "Buscar:",
-      lengthMenu: "Mostrar _MENU_ registros",
-      info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
-      paginate: {
-        first: "Primero",
-        last: "Último",
-        next: "Siguiente",
-        previous: "Anterior"
-      },
-      zeroRecords: "No se encontraron registros coincidentes",
-      infoEmpty: "Mostrando 0 a 0 de 0 registros",
-      infoFiltered: "(filtrado de _MAX_ registros en total)"
-    };
-
-    // Inicialización global para tablas cargadas directamente
-    new DataTable('#tablaClientes', {
-      dom: 'Bfrtip',
-      buttons: [{
-        extend: 'csvHtml5',
-        text: 'Exportar a CSV',
-        title: 'clientes'
-      }],
-      language: dataTableLanguage
-    });
-
-    new DataTable('#tablaPersonas', {
-      dom: 'Bfrtip',
-      buttons: [{
-        extend: 'csvHtml5',
-        text: 'Exportar a CSV',
-        title: 'personas'
-      }],
-      language: dataTableLanguage
-    });
-
-    // Para tablas cargadas por AJAX
-    document.addEventListener("DOMContentLoaded", () => {
-      const navbarOptions = document.querySelectorAll("#navbar-options .nav-link");
-
-      navbarOptions.forEach(enlace => {
-        enlace.addEventListener("click", function(event) {
-          const destino = event.target.closest("a").getAttribute("data-vista");
-
-          if (destino) {
-            fetch(destino, {
-                method: 'GET'
-              })
-              .then(response => response.text())
-              .then(data => {
-                document.querySelector("#contenido").innerHTML = data;
-
-                setTimeout(() => {
-                  const tablaClientes = document.querySelector("#tablaClientes");
-                  if (tablaClientes) {
-                    new DataTable(tablaClientes, {
-                      dom: 'Bfrtip',
-                      buttons: [{
-                        extend: 'csvHtml5',
-                        text: 'Exportar a CSV',
-                        title: 'clientes'
-                      }],
-                      language: dataTableLanguage
-                    });
-                  }
-                  const tablaPersonas = document.querySelector("#tablaPersonas");
-                  if (tablaPersonas) {
-                    new DataTable(tablaPersonas, {
-                      dom: 'Bfrtip',
-                      buttons: [{
-                        extend: 'csvHtml5',
-                        text: 'Exportar a CSV',
-                        title: 'personas'
-                      }],
-                      language: dataTableLanguage
-                    });
-                  }
-                }, 0);
-              })
-              .catch(error => console.error("Error al cargar la vista:", error));
-          }
-        });
-      });
-    });
-  </script>
-
   <!-- Modal Detalle Habitación -->
   <div class="modal fade" id="modalDetalleHabitacion" tabindex="-1" role="dialog" aria-labelledby="modalDetalleLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -658,29 +594,128 @@ if (!isset($_SESSION['idusuario'])) {
     </div>
   </div>
   <!-- /Modal Detalle Habitación -->
-
   <script>
-function mostrarDetalleHabitacion(idhabitacion) {
-  // Limpia los campos
-  document.getElementById('detalle-numero').textContent = '';
-  document.getElementById('detalle-cliente').textContent = '';
-  document.getElementById('detalle-inicio').textContent = '';
-  document.getElementById('detalle-fin').textContent = '';
+    function mostrarDetalleHabitacion(idhabitacion) {
+      // Limpia los campos
+      document.getElementById('detalle-numero').textContent = '';
+      document.getElementById('detalle-cliente').textContent = '';
+      document.getElementById('detalle-inicio').textContent = '';
+      document.getElementById('detalle-fin').textContent = '';
 
-  fetch(`menu/detalle_habitacion.php?idhabitacion=${idhabitacion}`)
-    .then(response => response.json())
-    .then(data => {
-      document.getElementById('detalle-numero').textContent = data.numero || '';
-      document.getElementById('detalle-cliente').textContent = data.cliente || '';
-      document.getElementById('detalle-inicio').textContent = data.inicio || '';
-      document.getElementById('detalle-fin').textContent = data.fin || '';
-      $('#modalDetalleHabitacion').modal('show');
-    })
-    .catch(() => {
-      alert('No se pudo obtener el detalle de la habitación.');
+      fetch(`menu/detalle_habitacion.php?idhabitacion=${idhabitacion}`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('detalle-numero').textContent = data.numero || '';
+          document.getElementById('detalle-cliente').textContent = data.cliente || '';
+          document.getElementById('detalle-inicio').textContent = data.inicio || '';
+          document.getElementById('detalle-fin').textContent = data.fin || '';
+          $('#modalDetalleHabitacion').modal('show');
+        })
+        .catch(() => {
+          alert('No se pudo obtener el detalle de la habitación.');
+        });
+    }
+  </script>
+  <!-- Modal para mostrar huéspedes (debe estar fuera de #contenido y de cualquier vista AJAX) -->
+  <div class="modal fade" id="modalHuespedes" tabindex="-1" role="dialog" aria-labelledby="modalHuespedesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalHuespedesLabel">Huéspedes del alquiler</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="huespedes-lista">
+            <!-- Aquí se cargan los huéspedes -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Mostrar Huespedes Alquiler -->
+  <script>
+    function mostrarHuespedesAlquiler(idalquiler) {
+      // Limpia la lista de huéspedes
+      document.getElementById('huespedes-lista').innerHTML = '';
+
+      fetch(`alquileres/huespedes_ajax.php?idalquiler=${idalquiler}`)
+        .then(response => response.json())
+        .then(data => {
+          const lista = document.getElementById('huespedes-lista');
+          if (data.length === 0) {
+            lista.innerHTML = '<p>No hay huéspedes registrados para este alquiler.</p>';
+            return;
+          }
+          lista.innerHTML = '';
+          data.forEach(huesped => {
+            const div = document.createElement('div');
+            div.classList.add('huesped-item');
+            div.innerHTML = `
+              <p><strong>${huesped.nombres} ${huesped.apellidos}</strong></p>
+              <p>Tipo huésped: ${huesped.tipohuesped}</p>
+              <p>Parentesco: ${huesped.parentesco ?? '-'}</p>
+              <p>Observaciones: ${huesped.observaciones ?? '-'}</p>
+              <hr>
+            `;
+            lista.appendChild(div);
+          });
+        })
+        .catch(() => {
+          document.getElementById('huespedes-lista').innerHTML = '<p>Error al cargar los huéspedes.</p>';
+        });
+
+      $('#modalHuespedes').modal('show');
+    }
+  </script>
+  <!-- Delegación global para el botón "Ver huéspedes" -->
+  <script>
+    // Delegación global para el botón "Ver huéspedes"
+    document.body.addEventListener('click', function(e) {
+      if (e.target.classList.contains('ver-huespedes')) {
+        const idalquiler = e.target.getAttribute('data-idalquiler');
+        if (typeof mostrarHuespedesAlquiler === 'function') {
+          mostrarHuespedesAlquiler(idalquiler);
+        } else {
+          alert('No se puede mostrar el modal de huéspedes. Recargue la página.');
+        }
+      }
     });
+  </script>
+
+  <!-- Modal para mostrar credenciales -->
+<div class="modal fade" id="modalCredenciales" tabindex="-1" role="dialog" aria-labelledby="modalCredencialesLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCredencialesLabel">Credenciales del Usuario</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Usuario:</strong> <span id="credencialUsuario"></span></p>
+        <p><strong>Contraseña:</strong> <span class="text-danger">No disponible por seguridad</span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function mostrarCredenciales(username) {
+    document.getElementById('credencialUsuario').textContent = username;
+    $('#modalCredenciales').modal('show');
 }
 </script>
+
+
 </body>
 
 </html>

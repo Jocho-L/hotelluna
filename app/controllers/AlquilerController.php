@@ -4,8 +4,13 @@ $conexion = Conexion::getConexion();
 
 require_once(__DIR__ . '/../models/Alquiler.php');
 
-$idhabitacion = isset($_GET['idhabitacion']) ? intval($_GET['idhabitacion']) : 0;
-$habitacion = ($idhabitacion > 0) ? obtenerHabitacionPorId($conexion, $idhabitacion) : null;
+// Obtener el idhabitacion desde GET
+$idhabitacion = isset($_GET['idhabitacion']) ? intval($_GET['idhabitacion']) : null;
+$alquiler = null;
+
+if ($idhabitacion) {
+    $alquiler = obtenerDetalleAlquilerPorHabitacion($conexion, $idhabitacion);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idcliente'])) {
     $idpersona = intval($_POST['idcliente']);
@@ -35,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idcliente'])) {
     $incluyedesayuno = isset($_POST['incluyedesayuno']) ? 1 : 0;
     $total = $_POST['total'];
 
-    $stmt = $conexion->prepare("INSERT INTO alquileres 
+    $stmt = $conexion->prepare("INSERT INTO alquileres
         (idcliente, idhabitacion, idusuarioentrada, fechahorainicio, fechahorafin, valoralquiler, modalidadpago, lugarprocedencia, observaciones, incluyedesayuno)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([

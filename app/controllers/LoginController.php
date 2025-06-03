@@ -1,5 +1,4 @@
 <?php
-
 require_once (__DIR__ . '/../models/Usuario.php');
 
 class LoginController {
@@ -7,12 +6,9 @@ class LoginController {
     public function login($username, $password) {
         $username = Conexion::limpiarCadena($username);
         $password = Conexion::limpiarCadena($password);
-
         $usuario = Usuario::obtenerUsuario($username);
 
-        //if ($usuario && Conexion::decryption($usuario['password']) === $password) {
-        if ($usuario && $usuario['password'] === $password) { //cambiar. esto es solo de prueba
-
+        if ($usuario && password_verify($password, $usuario['password']) && $usuario['estado'] === 'activo') {
             session_start();
             $_SESSION['idusuario'] = $usuario['idusuario'];
             $_SESSION['nombres'] = $usuario['nombres'];
@@ -20,6 +16,8 @@ class LoginController {
             $_SESSION['rol'] = $usuario['rol'];
             header("Location: views/index.php");
             exit;
+        } else if ($usuario && $usuario['estado'] !== 'activo') {
+            return "Usuario deshabilitado. Contacte al administrador.";
         } else {
             return "Credenciales incorrectas";
         }
