@@ -78,3 +78,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idcliente'])) {
     header("Location: /hotelluna/views/alquileres/index.php?mensaje=Alquiler registrado correctamente");
     exit;
 }
+
+/**
+ * Guarda una posobservación para un alquiler.
+ */
+function guardarPosobservacion($conexion, $idalquiler, $texto) {
+    $stmt = $conexion->prepare("UPDATE alquileres SET posobservaciones = ? WHERE idalquiler = ?");
+    $stmt->execute([$texto, $idalquiler]);
+}
+
+/**
+ * Cambia el estado de una habitación.
+ */
+function cambiarEstadoHabitacion($conexion, $idhabitacion, $estado) {
+    $stmt = $conexion->prepare("UPDATE habitaciones SET estado = ? WHERE idhabitacion = ?");
+    $stmt->execute([$estado, $idhabitacion]);
+}
+
+/**
+ * Obtiene los detalles de un alquiler por su ID.
+ */
+function obtenerDetalleAlquilerPorId($conexion, $idalquiler) {
+    $sql = "SELECT
+                a.*, h.numero AS habitacion_numero, h.piso AS habitacion_piso, h.numcamas AS habitacion_numcamas,
+                h.precioregular AS habitacion_precio, h.estado AS habitacion_estado, th.tipohabitacion AS habitacion_tipo,
+                p.nombres AS cliente_nombres, p.apellidos AS cliente_apellidos, p.numerodoc AS cliente_numerodoc, p.telefono AS cliente_telefono
+            FROM alquileres a
+            JOIN habitaciones h ON a.idhabitacion = h.idhabitacion
+            JOIN tipohabitaciones th ON h.idtipohabitacion = th.idtipohabitacion
+            JOIN clientes c ON a.idcliente = c.idcliente
+            JOIN personas p ON c.idpersona = p.idpersona
+            WHERE a.idalquiler = ?";
+    $stmt = $conexion->prepare($sql);
+    $stmt->execute([$idalquiler]);
+    $alquiler = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($alquiler) {
+        // Obtener acompañantes
+        $sqlA = "SELECT per.nombres, per.apellidos, per.numerodoc
+                 FROM huespedes h
+                 INNER JOIN personas per ON h.idpersona = per.idpersona
+                 WHERE h.idalquiler = ?";
+        $stmtA = $conexion->prepare($sqlA);
+        $stmtA->execute([$idalquiler]);
+        $alquiler['acompanantes'] = $stmtA->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    return $alquiler;
+}
+
+/**
+ * Obtiene los detalles del alquiler más reciente para una habitación.
+ */
+function obtenerDetalleAlquilerPorHabitacion($conexion, $idhabitacion) {
+    $sql = "SELECT
+                a.*, h.numero AS habitacion_numero, h.piso AS habitacion_piso, h.numcamas AS habitacion_numcamas,
+                h.precioregular AS habitacion_precio, h.estado AS habitacion_estado, th.tipohabitacion AS habitacion_tipo,
+                p.nombres AS cliente_nombres, p.apellidos AS cliente_apellidos, p.numerodoc AS cliente_numerodoc, p.telefono AS cliente_telefono
+            FROM alquileres a
+            JOIN habitaciones h ON a.idhabitacion = h.idhabitacion
+            JOIN tipohabitaciones th ON h.idtipohabitacion = th.idtipohabitacion
+            JOIN clientes c ON a.idcliente = c.idcliente
+            JOIN personas p ON c.idpersona = p.idpersona
+            WHERE a.idhabitacion = ?
+            ORDER BY a.fechahorainicio DESC
+            LIMIT 1";
+    $stmt = $conexion->prepare($sql);
+    $stmt->execute([$idhabitacion]);
+    $alquiler = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($alquiler) {
+        // Obtener acompañantes
+        $sqlA = "SELECT per.nombres, per.apellidos, per.numerodoc
+                 FROM huespedes h
+                 INNER JOIN personas per ON h.idpersona = per.idpersona
+                 WHERE h.idalquiler = ?";
+        $stmtA = $conexion->prepare($sqlA);
+        $stmtA->execute([$alquiler['idalquiler']]);
+        $alquiler['acompanantes'] = $stmtA->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    return $alquiler;
+}

@@ -1,13 +1,17 @@
 
 use hotel;
 
+select * from egresos;
 select * from habitaciones;
 
 select * from clientes;
 
 select * from personas;
+DELETE FROM personas WHERE idpersona = 12;
 
 SELECT * FROM alquileres
+
+SELECT * FROM mediopago
 
 SELECT * FROM roles
 

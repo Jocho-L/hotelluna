@@ -5,7 +5,7 @@ require_once '../../app/config/Conexion.php';
 $conexion = Conexion::getConexion();
 
 // La consulta SQL para obtener los clientes
-$sql = "SELECT 
+$sql = "SELECT
           c.idcliente,
           p.tipodoc,
           p.numerodoc,
@@ -61,7 +61,7 @@ if (empty($clientes)) {
           <h2>Lista de Clientes</h2>
 
           <!-- Botón para agregar un nuevo cliente -->
-          <a href="clientes/registrar.php" class="btn btn-success mb-3">Agregar Nuevo Cliente</a>
+          <!-- <a href="clientes/registrar.php" class="btn btn-success mb-3">Agregar Nuevo Cliente</a> -->
 
           <!-- Tabla de clientes -->
           <table id="tablaClientes" class="table table-bordered table-striped">

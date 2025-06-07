@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar_usuario']))
     if ($idpersona && $idrol && $username && $password && $estado) {
         $exito = Usuario::registrarUsuario($idpersona, $idrol, $username, $password, $estado);
         if ($exito) {
-            header("Location: ../../views/usuarios/index.php?msg=Usuario registrado");
+            header("Location: ../../views/index.php?msg=Usuario registrado");
             exit;
         } else {
             header("Location: ../../views/usuarios/registrar.php?error=No se pudo registrar");

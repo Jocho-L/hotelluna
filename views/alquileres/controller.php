@@ -3,41 +3,42 @@
 require_once(__DIR__ . '/../../app/config/Conexion.php');
 $conexion = Conexion::getConexion();
 
-// Solo pedir idhabitacion si NO es un POST de checkout
+// Si es GET o POST sin acción checkout, obtenemos y consultamos la habitación
 if (
     $_SERVER['REQUEST_METHOD'] !== 'POST' ||
     (isset($_POST['accion']) && $_POST['accion'] !== 'checkout')
 ) {
-    if (!isset($_GET['idhabitacion'])) {
+    if (!isset($_GET['idhabitacion']) && !isset($_POST['idhabitacion'])) {
         die("No se especificó un ID de habitación.");
     }
-    $idhabitacion = (int)$_GET['idhabitacion'];  // Aseguramos que sea un valor entero
+    $idhabitacion = isset($_GET['idhabitacion']) ? (int)$_GET['idhabitacion'] : (int)$_POST['idhabitacion'];
+
+    // Consultar la base de datos para obtener los detalles de la habitación
+    $sql = "SELECT idhabitacion, numero, precioregular, estado
+            FROM habitaciones WHERE idhabitacion = :idhabitacion";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':idhabitacion', $idhabitacion, PDO::PARAM_INT);
+    $stmt->execute();
+    $habitacion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$habitacion) {
+        echo "No se encontró la habitación con el ID: " . htmlspecialchars($idhabitacion);
+        die();
+    }
+
+    // Aquí puedes seguir usando los datos de la habitación
+    $numero_habitacion = $habitacion['numero'];
+    $precioregular = $habitacion['precioregular'];
+    $estado = $habitacion['estado'];
+    $idhabitacion = $habitacion['idhabitacion'];
 }
-
-// Consultar la base de datos para obtener los detalles de la habitación
-$sql = "SELECT idhabitacion, numero, precioregular, estado
-        FROM habitaciones WHERE idhabitacion = :idhabitacion";
-$stmt = $conexion->prepare($sql);
-$stmt->bindParam(':idhabitacion', $idhabitacion, PDO::PARAM_INT);
-
-// Ejecutar la consulta
-$stmt->execute();
-$habitacion = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// Verificar si la habitación existe
-if (!$habitacion) {
-    echo "No se encontró la habitación con el ID: " . htmlspecialchars($idhabitacion);
-    die();  // Detenemos la ejecución si no se encuentra la habitación
-}
-
-// Obtener los valores de la habitación
-$numero_habitacion = $habitacion['numero'];
-$precioregular = $habitacion['precioregular'];
-$estado = $habitacion['estado'];
-$idhabitacion = $habitacion['idhabitacion'];
 
 // Verificar si se ha enviado el formulario
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && (!isset($_POST['accion']) || $_POST['accion'] !== 'checkout')) {
+    $idhabitacion = isset($_POST['idhabitacion']) ? (int)$_POST['idhabitacion'] : null;
+    if (!$idhabitacion) {
+        die("No se especificó un ID de habitación.");
+    }
     // Recoger los datos del formulario
     $fechainicio = $_POST['fechainicio'];
     $fechafin = $_POST['fechafin'];
@@ -48,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $incluyedesayuno = isset($_POST['incluyedesayuno']) ? 1 : 0;
     $idcliente = $_POST['idcliente'];
     $idmediopago = isset($_POST['idmediopago']) ? $_POST['idmediopago'] : null; // <-- Nuevo
+    $placa = isset($_POST['placa']) ? trim($_POST['placa']) : null;
 
     session_start();
     if (!isset($_SESSION['idusuario'])) {
@@ -79,9 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         // Registrar el alquiler
         $sql = "INSERT INTO alquileres
-            (idcliente, idhabitacion, idusuarioentrada, fechahorainicio, fechahorafin, valoralquiler, modalidadpago, idmediopago, observaciones, lugarprocedencia, incluyedesayuno)
+            (idcliente, idhabitacion, idusuarioentrada, fechahorainicio, fechahorafin, valoralquiler, modalidadpago, idmediopago, observaciones, lugarprocedencia, incluyedesayuno, placa)
             VALUES
-            (:idcliente, :idhabitacion, :idusuarioentrada, :fechainicio, :fechafin, :total, :modalidadpago, :idmediopago, :observaciones, :lugarprocedencia, :incluyedesayuno)";
+            (:idcliente, :idhabitacion, :idusuarioentrada, :fechainicio, :fechafin, :total, :modalidadpago, :idmediopago, :observaciones, :lugarprocedencia, :incluyedesayuno, :placa)";
         $stmt = $conexion->prepare($sql);
         $stmt->bindParam(':idcliente', $idcliente_db, PDO::PARAM_INT);
         $stmt->bindParam(':idhabitacion', $idhabitacion, PDO::PARAM_INT);
@@ -94,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->bindParam(':observaciones', $observaciones);
         $stmt->bindParam(':lugarprocedencia', $lugarprocedencia);
         $stmt->bindParam(':incluyedesayuno', $incluyedesayuno, PDO::PARAM_BOOL);
+        $stmt->bindParam(':placa', $placa);
         $stmt->execute();
 
         // Obtener el ID del alquiler registrado ANTES de cualquier otro insert
@@ -103,15 +106,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped) VALUES (?, ?, 'cliente')");
         $stmt->execute([$idalquiler, $idcliente]);
 
-        // Registrar acompañantes como huéspedes tipo "acompañante"
-        if (!empty($_POST['acompanantes_json'])) {
-            $acompanantes = json_decode($_POST['acompanantes_json'], true);
-            foreach ($acompanantes as $idpersonaAcompanante) {
-                // Evita registrar al cliente principal como acompañante
-                if ($idpersonaAcompanante == $idcliente) continue;
-                $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped, observaciones) VALUES (?, ?, 'acompañante', 'acompañante')");
-                $stmt->execute([$idalquiler, $idpersonaAcompanante]);
+        // Registrar acompañantes con sus datos completos
+        $acompanantes = $_POST['acompanante'] ?? [];
+        $tipos = $_POST['tipohuesped_acompanante'] ?? [];
+        $parentesco_tipos = $_POST['parentesco_tipo_acompanante'] ?? [];
+        $parentescos = $_POST['parentesco_acompanante'] ?? [];
+        $observs = $_POST['observaciones_acompanante'] ?? [];
+        // Si hay archivos de carta poder
+        $cartapoder_files = $_FILES['cartapoder_acompanante'] ?? null;
+
+        foreach ($acompanantes as $i => $idpersona) {
+            $tipo = $tipos[$i] ?? 'Adulto';
+            $obs = $observs[$i] ?? '';
+            $parentesco_tipo = $parentesco_tipos[$i] ?? null;
+            $parentesco = null;
+            $idresponsable = null;
+            $cartapoder = null;
+
+            if ($tipo === 'Menor de edad') {
+                $parentesco = $parentesco_tipo;
+                $idresponsable = $parentescos[$i] ?? null;
+
+                // Procesar carta poder si es familiar indirecto
+                if (
+                    $parentesco === 'indirecto' &&
+                    isset($_FILES['cartapoder_acompanante']) &&
+                    isset($_FILES['cartapoder_acompanante']['tmp_name'][$i]) &&
+                    $_FILES['cartapoder_acompanante']['tmp_name'][$i]
+                ) {
+                    // Carpeta destino
+                    $carpetaDestino = __DIR__ . '/../../public/img/cartapoder/';
+                    if (!is_dir($carpetaDestino)) {
+                        mkdir($carpetaDestino, 0777, true);
+                    }
+                    // Nombre: fecha-idalquiler-idpersona.extension
+                    $fecha = date('Ymd_His');
+                    $extension = pathinfo($_FILES['cartapoder_acompanante']['name'][$i], PATHINFO_EXTENSION);
+                    $nombreArchivo = $fecha . '_alquiler' . $idalquiler . '_persona' . $idpersona . '.' . $extension;
+                    $rutaDestino = $carpetaDestino . $nombreArchivo;
+
+                    if (move_uploaded_file($_FILES['cartapoder_acompanante']['tmp_name'][$i], $rutaDestino)) {
+                        $cartapoder = $nombreArchivo; // Solo el nombre, no la ruta completa
+                    } else {
+                        $cartapoder = null;
+                    }
+                }
             }
+
+            $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped, observaciones, parentesco, idresponsable, cartapoder) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $idalquiler,
+                $idpersona,
+                $tipo,
+                $obs,
+                $parentesco,
+                $idresponsable,
+                $cartapoder
+            ]);
         }
 
         // Cambiar el estado de la habitación a 'ocupada'
@@ -160,5 +211,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         header("Location: index.php?error=No se encontró la habitación");
         exit;
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Registrar cliente principal como huésped adulto
+    $idalquiler = $_POST['idalquiler'];
+    $idcliente = $_POST['idcliente'];
+    $observaciones = ''; // Puedes obtenerlo si lo necesitas
+    $tipohuesped = 'Adulto';
+    $parentesco = null;
+    $idresponsable = null;
+    $cartapoder = null;
+
+    // Insertar cliente principal
+    $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, observaciones, tipohuesped, parentesco, idresponsable, cartapoder) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$idalquiler, $idcliente, $observaciones, $tipohuesped, $parentesco, $idresponsable, $cartapoder]);
+
+    // Registrar acompañantes
+    $acompanantes = $_POST['acompanante'] ?? [];
+    $tipos = $_POST['tipohuesped_acompanante'] ?? [];
+    $parentescos = $_POST['parentesco_acompanante'] ?? [];
+    $observs = $_POST['observaciones_acompanante'] ?? [];
+
+    foreach ($acompanantes as $i => $idpersona) {
+        $tipo = $tipos[$i];
+        $obs = $observs[$i] ?? '';
+        if ($tipo === 'Menor de edad') {
+            // parentesco es el id del responsable
+            $idresponsable = $parentescos[$i];
+            $parentesco = null;
+        } else {
+            $parentesco = $parentescos[$i];
+            $idresponsable = null;
+        }
+        $stmt->execute([$idalquiler, $idpersona, $obs, $tipo, $parentesco, $idresponsable, null]);
     }
 }

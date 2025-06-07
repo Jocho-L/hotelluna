@@ -33,6 +33,3 @@ include('../../app/controllers/ClienteController.php');
   </div>
 </div>
 
-<?php
-include('../../includes/footer.php');
-?>

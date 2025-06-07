@@ -1,7 +1,7 @@
 <?php
 require_once(__DIR__ . '/../config/Conexion.php');
 
-class Cliente
+class Persona
 {
     private $db;
 
@@ -10,11 +10,8 @@ class Cliente
         $this->db = Conexion::getConexion();
     }
 
-    public function guardarPersona($tipodoc, $numerodoc, $apellidos, $nombres, $fechanac, $telefono)
+    public function guardarPersona($tipodoc, $numerodoc, $apellidos, $nombres, $fechanac, $telefono, $genero)
     {
-        // Puedes ajustar el valor de 'genero' según tu formulario
-        $genero = $_POST['genero'] ?? 'otro';
-
         $sql = "INSERT INTO personas (tipodoc, numerodoc, apellidos, genero, nombres, telefono, fechanac)
                 VALUES (:tipodoc, :numerodoc, :apellidos, :genero, :nombres, :telefono, :fechanac)";
         $stmt = $this->db->prepare($sql);

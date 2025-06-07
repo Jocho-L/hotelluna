@@ -14,6 +14,7 @@ class LoginController {
             $_SESSION['nombres'] = $usuario['nombres'];
             $_SESSION['apellidos'] = $usuario['apellidos'];
             $_SESSION['rol'] = $usuario['rol'];
+            $_SESSION['usuario_nombre'] = $usuario['nombres'] . ' ' . $usuario['apellidos'];
             header("Location: views/index.php");
             exit;
         } else if ($usuario && $usuario['estado'] !== 'activo') {
