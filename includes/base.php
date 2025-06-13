@@ -32,7 +32,6 @@ if (!isset($_SESSION['idusuario'])) {
   <!-- CSS de DataTables -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
-
 </head>
 <body class="hold-transition sidebar-mini">
   <div class="wrapper">
@@ -129,11 +128,12 @@ if (!isset($_SESSION['idusuario'])) {
       <div class="sidebar">
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-          <div class="image">
-            <img src="/hotelluna/public/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
-          </div>
           <div class="info">
-              <a class="d-block"><?= $_SESSION['nombres'] . " " . $_SESSION['apellidos'] ?> (<?= $_SESSION['rol'] ?>)</a>
+            <a class="d-block" style="white-space: normal;">
+              <span><?= $_SESSION['nombres'] ?></span><br>
+              <span><?= $_SESSION['apellidos'] ?></span><br>
+              <small>(<?= $_SESSION['rol'] ?>)</small>
+            </a>
           </div>
         </div>
 
@@ -151,7 +151,7 @@ if (!isset($_SESSION['idusuario'])) {
               </a>
               <ul class="nav nav-treeview">
                 <li class="nav-item">
-                  <a href="#" data-vista="habitaciones/listar.php" class="nav-link">
+                  <a href="#" data-vista="/hotelluna/views/habitaciones/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Habitaciones</p>
                   </a>
@@ -159,13 +159,13 @@ if (!isset($_SESSION['idusuario'])) {
                 <!-- Solo para Administrador -->
                 <?php if ($_SESSION['rol'] === 'Administrador'): ?>
                 <li class="nav-item">
-                  <a href="#" data-vista="usuarios/listar.php" class="nav-link">
+                  <a href="#" data-vista="/hotelluna/views/usuarios/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Usuarios</p>
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a href="#" data-vista="empresas/listar.php" class="nav-link">
+                  <a href="#" data-vista="/hotelluna/views/empresas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Empresas</p>
                   </a>
@@ -173,25 +173,25 @@ if (!isset($_SESSION['idusuario'])) {
                 <?php endif; ?>
                 <!-- Otros módulos accesibles por ambos roles -->
                 <li class="nav-item">
-                  <a href="#" data-vista="clientes/listar.php" class="nav-link">
+                  <a href="#" data-vista="/hotelluna/views/clientes/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Clientes</p>
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a href="#" data-vista="alquileres/listar.php" class="nav-link">
+                  <a href="#" data-vista="/hotelluna/views/alquileres/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Alquileres</p>
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a href="#" data-vista="personas/listar.php" class="nav-link">
+                  <a href="#" data-vista="/hotelluna/views/personas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Personas</p>
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a href="#" data-vista="reservas/listar.php" class="nav-link">
+                  <a href="#" data-vista="/hotelluna/views/reservas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Reservas</p>
                   </a>
@@ -199,7 +199,13 @@ if (!isset($_SESSION['idusuario'])) {
               </ul>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="#" data-vista="/hotelluna/views/reportes_usuario/menu.php" class="nav-link">
+                <i class="nav-icon fas fa-th"></i>
+                <p>Reportes U</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" data-vista="/hotelluna/views/reportes/menu.php" class="nav-link">
                 <i class="nav-icon fas fa-th"></i>
                 <p>Reportes</p>
               </a>
@@ -227,3 +233,15 @@ if (!isset($_SESSION['idusuario'])) {
         -->
       <div class="content">
         <div class="container-fluid">
+          <!-- jQuery -->
+<script src="/hotelluna/plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="/hotelluna/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="/hotelluna/public/js/adminlte.min.js"></script>
+<!-- DataTables v2 JS -->
+<script src="https://cdn.datatables.net/v/dt/dt-2.0.3/datatables.min.js"></script>
+<!-- cargar ajax de vistas del menú lateral y inicializar DataTables -->
+<script src="/hotelluna/public/js/cargar_ajax.js"></script>
+</body>
+</html></div>

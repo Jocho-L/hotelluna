@@ -55,7 +55,7 @@ $conn = null;
           <div class="card-body">
 
             <?php if ($habitacion): ?>
-              <form id="formEditarHabitacion" method="POST" action="../../controllers/HabitacionController.php">
+              <form id="formEditarHabitacion" method="POST" action="/hotelluna/app/controllers/HabitacionController.php">
                 <input type="hidden" name="action" value="actualizar">
                 <input type="hidden" name="idhabitacion" value="<?= $habitacion['idhabitacion'] ?>">
 
@@ -99,7 +99,15 @@ $conn = null;
                     value="<?= $habitacion['numcamas'] ?>" required>
                 </div>
 
-                <input type="hidden" name="estado" value="Disponible">
+                <div class="form-group">
+                  <label for="estado">Estado</label>
+                  <select class="form-control" id="estado" name="estado" required>
+                    <option value="disponible" <?= strtolower($habitacion['estado']) == 'disponible' ? 'selected' : '' ?>>Disponible</option>
+                    <option value="ocupada" <?= strtolower($habitacion['estado']) == 'ocupada' ? 'selected' : '' ?>>Ocupada</option>
+                    <option value="mantenimiento" <?= strtolower($habitacion['estado']) == 'mantenimiento' ? 'selected' : '' ?>>Mantenimiento</option>
+                    <option value="reservado" <?= strtolower($habitacion['estado']) == 'reservado' ? 'selected' : '' ?>>Reservado</option>
+                  </select>
+                </div>
 
                 <div class="text-right">
                   <button type="submit" class="btn btn-success">

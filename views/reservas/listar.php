@@ -26,7 +26,7 @@
           <h2>Lista de Reservas</h2>
 
           <!-- Botón para agregar una nueva reserva -->
-          <a href="#" id="btnRegistrar" class="btn btn-success mb-3" data-vista="reservas/registrar.php">Agregar Nueva Reserva</a>
+          <a href="/hotelluna/views/reservas/registrar.php" id="btnRegistrar" class="btn btn-success mb-3" data-vista="reservas/registrar.php">Agregar Nueva Reserva</a>
 
           <!-- Tabla de reservas -->
           <table class="table table-bordered table-striped">

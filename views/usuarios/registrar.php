@@ -89,7 +89,7 @@ include('../../app/controllers/UsuarioController.php'); // Cambia según tu estr
             </div>
             <div class="card-footer text-right">
               <button type="submit" name="registrar_usuario" class="btn btn-primary">Registrar</button>
-              <a href="index.php" class="btn btn-secondary">Cancelar</a>
+              <a href="/hotelluna/views/index.php" class="btn btn-secondary">Cancelar</a>
             </div>
           </form>
         </div>

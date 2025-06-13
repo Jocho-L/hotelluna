@@ -18,7 +18,7 @@ CREATE TABLE habitaciones (
     piso INT NOT NULL,
     numcamas INT NOT NULL,
     precioregular DECIMAL(10,2) NOT NULL,
-    estado ENUM('disponible', 'ocupada', 'mantenimiento', 'reservado') NOT NULL DEFAULT 'disponible',
+    estado ENUM('disponible', 'ocupada', 'mantenimiento', 'reservado', 'deshabilitado') NOT NULL DEFAULT 'disponible',
     FOREIGN KEY (idtipohabitacion) REFERENCES tipohabitaciones(idtipohabitacion) ON DELETE CASCADE
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE empresas (
     ruc VARCHAR(20) NOT NULL UNIQUE,
     razonsocial VARCHAR(255) NOT NULL,
     email VARCHAR(100),
-    telefono VARCHAR(20) UNIQUE
+    telefono VARCHAR(20)
 );
 
 -- Tabla de personas
@@ -45,9 +45,10 @@ CREATE TABLE personas (
     apellidos VARCHAR(100) NOT NULL,
     genero ENUM('masculino', 'femenino') NOT NULL,
     nombres VARCHAR(100) NOT NULL,
-    telefono CHAR(9) UNIQUE,
+    telefono CHAR(9),
     fechanac DATE NOT NULL
 );
+
 
 -- Tabla de clientes
 CREATE TABLE clientes (
@@ -91,6 +92,8 @@ CREATE TABLE alquileres (
     numtransaccion VARCHAR(50) DEFAULT NULL,
     lugarprocedencia VARCHAR(100) DEFAULT NULL,
     observaciones VARCHAR(255),
+    posobservaciones VARCHAR(255) DEFAULT NULL,
+    placa VARCHAR(30) DEFAULT NULL,
     incluyedesayuno BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (idcliente) REFERENCES clientes(idcliente) ON DELETE CASCADE,
     FOREIGN KEY (idhabitacion) REFERENCES habitaciones(idhabitacion) ON DELETE CASCADE,
@@ -107,9 +110,13 @@ CREATE TABLE huespedes (
     observaciones VARCHAR(50),
     tipohuesped VARCHAR(50) NOT NULL,
     parentesco VARCHAR(50),
+    idresponsable INT NULL,
+    cartapoder TEXT DEFAULT NULL,
+    FOREIGN KEY (idresponsable) REFERENCES personas(idpersona) ON DELETE SET NULL,
     FOREIGN KEY (idalquiler) REFERENCES alquileres(idalquiler) ON DELETE CASCADE,
     FOREIGN KEY (idpersona) REFERENCES personas(idpersona) ON DELETE CASCADE
 );
+
 
 -- Tabla de créditos (alquileres fiados)
 CREATE TABLE creditos (
@@ -154,5 +161,14 @@ CREATE TABLE mantenimientos (
     fechahorafin DATETIME NOT NULL,
     observaciones TEXT,
     FOREIGN KEY (idhabitacion) REFERENCES habitaciones(idhabitacion) ON DELETE CASCADE,
+    FOREIGN KEY (idusuario) REFERENCES usuarios(idusuario) ON DELETE CASCADE
+);
+CREATE TABLE egresos (
+    idegreso INT AUTO_INCREMENT PRIMARY KEY,
+    idusuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    monto DECIMAL(10,2) NOT NULL,
+    observaciones TEXT,
     FOREIGN KEY (idusuario) REFERENCES usuarios(idusuario) ON DELETE CASCADE
 );

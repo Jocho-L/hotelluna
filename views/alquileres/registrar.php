@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Lima'); // Establece la zona horaria de Lima
 include('../../includes/base.php');
 require_once('../../app/config/Conexion.php');
 require_once('../../app/models/Alquiler.php');
@@ -8,9 +9,16 @@ $idhabitacion = isset($_GET['idhabitacion']) ? intval($_GET['idhabitacion']) : n
 $habitacion = null;
 
 if ($idhabitacion) {
-    $conexion = Conexion::getConexion();
-    $habitacion = obtenerHabitacionPorId($conexion, $idhabitacion);
+  $conexion = Conexion::getConexion();
+  $habitacion = obtenerHabitacionPorId($conexion, $idhabitacion);
 }
+
+if (!$idhabitacion && $habitacion) {
+  $idhabitacion = $habitacion['idhabitacion'];
+}
+
+// Obtén la fecha y hora actual del servidor en formato compatible con input[type=datetime-local]
+$now = date('Y-m-d\TH:i');
 ?>
 
 <!-- ZONA: Cabecera -->
@@ -36,14 +44,18 @@ if ($idhabitacion) {
     <div class="row justify-content-center">
       <div class="col-lg-10">
         <div class="card border border-secondary shadow rounded p-4">
-          <form id="formAlquiler" method="POST" action="controller.php?idhabitacion=<?= $habitacion['idhabitacion'] ?>">
-            <div class="card mb-4">
-              <div class="card-header">
-                <h4>Detalles de la Habitación <strong>
+          <form id="formAlquiler" method="POST" enctype="multipart/form-data" action="controller.php?idhabitacion=<?= $habitacion['idhabitacion'] ?>">
+            <!-- Detalles de la Habitación -->
+            <div class="card mb-4 bg-light">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                  <i class="fas fa-bed"></i>
+                  Detalles de la Habitación <strong>
                     <?= isset($habitacion) && $habitacion ? htmlspecialchars($habitacion['numero']) : 'No seleccionada' ?>
-                  </strong></h4>
+                  </strong>
+                </h4>
               </div>
-              <div class="card-body"> <!-- Detalles habitacion -->
+              <div class="card-body">
                 <?php if ($habitacion): ?>
                   <div class="row">
                     <div class="col-md-6 mb-3">
@@ -54,120 +66,166 @@ if ($idhabitacion) {
                     <div class="col-md-6 mb-3">
                       <p><strong>Tipo de Habitación:</strong> <?= htmlspecialchars($habitacion['tipohabitacion']) ?></p>
                       <p><strong>Estado:</strong> <?= htmlspecialchars($habitacion['estado']) ?></p>
-                      <p><strong>Precio Regular:</strong> S/. <?= number_format($habitacion['precioregular'], 2) ?></p>
+                      <p><strong>Precio Regular:</strong> <span class="badge badge-success">S/. <?= number_format($habitacion['precioregular'], 2) ?></span></p>
                     </div>
                   </div>
                 <?php else: ?>
                   <p class="text-danger">Habitación no encontrada.</p>
                 <?php endif; ?>
               </div>
-
             </div>
 
-
-            <div class="row">
-
-              <div class="col-md-9 mb-4"> <!-- Buscar Cliente -->
-                <label class="form-label">Buscar Cliente</label>
-                <select class="form-control" id="buscar_cliente" style="width: 100%;"></select>
-                <input type="hidden" id="idcliente" name="idcliente" />
-              </div>
-
-              <div class="col-md-3 d-flex align-items-end mb-4"> <!-- Agregar Cliente -->
-                <a href="../clientes/registrar.php" class="btn btn-success w-100">Agregar Cliente</a>
-              </div>
-
-              <div class="col-md-9 mb-4">
-                <label class="form-label">Acompañantes</label>
-                <div id="acompanantes-container">
-                  <!-- Aquí se agregan los selects dinámicamente -->
+            <!-- Cliente y Acompañantes -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <div class="row align-items-end">
+                  <div class="col-md-9 mb-3">
+                    <label class="form-label font-weight-bold">Buscar Cliente</label>
+                    <select class="form-control" id="buscar_cliente" style="width: 100%;" required></select>
+                    <input type="hidden" id="idcliente" name="idcliente" />
+                  </div>
+                  <div class="col-md-3 mb-3">
+                    <a href="/hotelluna/views/personas/registrar.php" class="btn btn-success btn-block" title="Agregar nueva persona">
+                      <i class="fas fa-user-plus"></i> Agregar Persona
+                    </a>
+                  </div>
                 </div>
-                <button type="button" class="btn btn-primary mt-2" id="agregar-acompanante">+</button>
-              </div>
-              <input type="hidden" name="acompanantes_json" id="acompanantes_json">
-
-              <div class="col-md-6 mb-3"> <!-- Fecha de Inicio -->
-                <label class="form-label">Fecha de Inicio</label>
-                <input type="datetime-local" class="form-control" name="fechainicio" id="fechainicio" required readonly>
-              </div>
-
-              <div class="col-md-6 mb-3"> <!-- Fecha de Fin -->
-                <label class="form-label">Fecha de Fin</label>
-                <input type="datetime-local" class="form-control" name="fechafin" id="fechafin" required>
-              </div>
-
-              <div class="col-md-6 mb-3"> <!-- Lugar de Procedencia -->
-                <label class="form-label">Lugar de Procedencia</label>
-                <select class="form-control" id="lugarprocedencia" name="lugarprocedencia" required>
-                  <option value="">Seleccione una región</option>
-                  <option value="Amazonas">Amazonas</option>
-                  <option value="Áncash">Áncash</option>
-                  <option value="Apurímac">Apurímac</option>
-                  <option value="Arequipa">Arequipa</option>
-                  <option value="Ayacucho">Ayacucho</option>
-                  <option value="Cajamarca">Cajamarca</option>
-                  <option value="Callao">Callao</option>
-                  <option value="Cusco">Cusco</option>
-                  <option value="Huancavelica">Huancavelica</option>
-                  <option value="Huánuco">Huánuco</option>
-                  <option value="Ica">Ica</option>
-                  <option value="Junín">Junín</option>
-                  <option value="La Libertad">La Libertad</option>
-                  <option value="Lambayeque">Lambayeque</option>
-                  <option value="Lima">Lima</option>
-                  <option value="Loreto">Loreto</option>
-                  <option value="Madre de Dios">Madre de Dios</option>
-                  <option value="Moquegua">Moquegua</option>
-                  <option value="Pasco">Pasco</option>
-                  <option value="Piura">Piura</option>
-                  <option value="Puno">Puno</option>
-                  <option value="San Martín">San Martín</option>
-                  <option value="Tacna">Tacna</option>
-                  <option value="Tumbes">Tumbes</option>
-                  <option value="Ucayali">Ucayali</option>
-                </select>
-              </div>
-
-              <div class="col-md-6 mb-3"> <!-- Modalidad de Pago -->
-                <label class="form-label">Modalidad de Pago</label>
-                <select class="form-control" name="modalidadpago" required>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Tarjeta">Tarjeta</option>
-                  <option value="Transferencia">Transferencia</option>
-                </select>
-              </div>
-
-              <div class="col-md-12 mb-3"> <!-- Observaciones -->
-                <label class="form-label">Observaciones</label>
-                <textarea class="form-control" name="observaciones" rows="4"
-                  placeholder="Escribe cualquier observación aquí..."></textarea>
-              </div>
-
-              <div class="col-md-6 mb-3"> <!-- Total a Pagar -->
-                <label class="form-label">Total a Pagar</label>
-                <input type="text" class="form-control" name="total" id="total" readonly>
-              </div>
-
-              <!-- Incluye desayuno -->
-              <div class="col-md-6 mb-3 d-flex align-items-center">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" name="incluyedesayuno" id="incluyedesayuno" value="1">
-                  <label class="form-check-label" for="incluyedesayuno">
-                    Incluye desayuno
-                  </label>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <label class="form-label font-weight-bold">Acompañantes</label>
+                    <div id="acompanantes-container"></div>
+                    <button type="button" class="btn btn-outline-primary mt-2" id="agregar-acompanante" title="Agregar acompañante">
+                      <i class="fas fa-user-friends"></i> Añadir Acompañante
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div class="col-12"> <!-- BTN Asignar Habitación -->
-                <button type="submit" class="btn btn-primary">Asignar Habitación</button>
+                <input type="hidden" name="acompanantes_json" id="acompanantes_json">
               </div>
             </div>
+
+            <!-- Fechas y Lugar -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label font-weight-bold">Fecha de Inicio</label>
+                    <input type="datetime-local" class="form-control" name="fechainicio" id="fechainicio" required readonly value="<?= $now ?>">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label font-weight-bold">Fecha de Fin</label>
+                    <input type="datetime-local" class="form-control" name="fechafin" id="fechafin" required>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label font-weight-bold">Lugar de Procedencia</label>
+                    <select class="form-control" id="lugarprocedencia" name="lugarprocedencia" required>
+                      <option value="">Seleccione una región</option>
+                      <option value="Amazonas">Amazonas</option>
+                      <option value="Áncash">Áncash</option>
+                      <option value="Apurímac">Apurímac</option>
+                      <option value="Arequipa">Arequipa</option>
+                      <option value="Ayacucho">Ayacucho</option>
+                      <option value="Cajamarca">Cajamarca</option>
+                      <option value="Callao">Callao</option>
+                      <option value="Cusco">Cusco</option>
+                      <option value="Huancavelica">Huancavelica</option>
+                      <option value="Huánuco">Huánuco</option>
+                      <option value="Ica">Ica</option>
+                      <option value="Junín">Junín</option>
+                      <option value="La Libertad">La Libertad</option>
+                      <option value="Lambayeque">Lambayeque</option>
+                      <option value="Lima">Lima</option>
+                      <option value="Loreto">Loreto</option>
+                      <option value="Madre de Dios">Madre de Dios</option>
+                      <option value="Moquegua">Moquegua</option>
+                      <option value="Pasco">Pasco</option>
+                      <option value="Piura">Piura</option>
+                      <option value="Puno">Puno</option>
+                      <option value="San Martín">San Martín</option>
+                      <option value="Tacna">Tacna</option>
+                      <option value="Tumbes">Tumbes</option>
+                      <option value="Ucayali">Ucayali</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label font-weight-bold">Modalidad de Pago</label>
+                    <select class="form-control" name="modalidadpago" required>
+                      <option value="Efectivo">Efectivo</option>
+                      <option value="Yape">Yape</option>
+                      <option value="Plin">Plin</option>
+                      <option value="Culqi">Culqi</option>
+                      <option value="Deposito">Deposito</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observaciones y Extras -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <label class="form-label font-weight-bold">Observaciones</label>
+                    <textarea class="form-control" name="observaciones" rows="3" placeholder="Escribe cualquier observación aquí..."></textarea>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label font-weight-bold">Placa (opcional)</label>
+                    <input type="text" class="form-control" name="placa" maxlength="30" placeholder="Ej: ABC-123">
+                  </div>
+                  <div class="col-md-6 mb-3 d-flex align-items-center">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="incluyedesayuno" id="incluyedesayuno" value="1">
+                      <label class="form-check-label" for="incluyedesayuno">
+                        <i class="fas fa-coffee"></i> Incluye desayuno
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label font-weight-bold">Total a Pagar</label>
+                    <input type="text" class="form-control" name="total" id="total" readonly>
+                  </div>
+                  <!-- Apartado para modificar el precio -->
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label font-weight-bold">Modificar Precio</label>
+                    <div class="input-group">
+                      <input type="number" step="0.01" class="form-control" id="modificador_valor" placeholder="Cantidad o porcentaje">
+                      <div class="input-group-append">
+                        <select class="form-control" id="modificador_tipo">
+                          <option value="fijo">S/. Fijo</option>
+                          <option value="porcentaje">% Porcentaje</option>
+                        </select>
+                      </div>
+                    </div>
+                    <small class="form-text text-muted">Ingrese un monto fijo o porcentaje para aumentar o descontar.</small>
+                    <div class="form-check mt-2">
+                      <input class="form-check-input" type="checkbox" id="modificador_descuento">
+                      <label class="form-check-label" for="modificador_descuento">
+                        Aplicar como descuento
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón de Envío -->
+            <div class="text-center">
+              <button type="submit" class="btn btn-lg btn-primary px-5">
+                <i class="fas fa-check-circle"></i> Asignar Habitación
+              </button>
+            </div>
+            <input type="hidden" name="idhabitacion" value="<?php echo htmlspecialchars($idhabitacion); ?>">
           </form>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- FontAwesome para iconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <!-- Select2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -215,6 +273,30 @@ if ($idhabitacion) {
       var data = e.params.data;
       $('#idcliente').val(data.id); // Ahora guarda idpersona
       $('#cliente-info').show();
+
+      // Consultar la fecha de nacimiento del cliente seleccionado
+      $.ajax({
+        url: '../../app/controllers/BuscarPersona.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { idpersona: data.id },
+        success: function(res) {
+          if (res && res.length > 0 && res[0].fechanacimiento) {
+            let fechaNacimiento = new Date(res[0].fechanacimiento);
+            let hoy = new Date();
+            let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+            let m = hoy.getMonth() - fechaNacimiento.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+              edad--;
+            }
+            if (edad < 18) {
+              alert('El cliente seleccionado es menor de edad y no puede registrarse.');
+              $('#idcliente').val('');
+              $('#buscar_cliente').val(null).trigger('change');
+            }
+          }
+        }
+      });
     });
   });
 </script>
@@ -230,134 +312,354 @@ if ($idhabitacion) {
 </script>
 
 <script>
-  function addMonths(date, months) {
-    let d = new Date(date);
-    d.setMonth(d.getMonth() + months);
-    return d;
-  }
-
   window.addEventListener('DOMContentLoaded', function() {
-    const now = new Date();
-    const local = now.toISOString().slice(0,16);
-    const maxDate = addMonths(now, 2).toISOString().slice(0,16);
-
-    // Fecha de inicio: bloqueada al día/hora actual
     const fechainicio = document.getElementById('fechainicio');
-    fechainicio.value = local;
+    const local = fechainicio.value;
+    const now = new Date(local);
+
+    // Calcular el inicio del día siguiente (00:00)
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0); // <-- Esto es clave
+    const tomorrowStr = tomorrow.toISOString().slice(0, 16);
+
+    // Máximo dos meses desde la fecha de inicio
+    function addMonths(date, months) {
+      let d = new Date(date);
+      d.setMonth(d.getMonth() + months);
+      return d;
+    }
+    const maxDate = addMonths(now, 2).toISOString().slice(0, 16);
+
     fechainicio.min = local;
     fechainicio.max = local;
     fechainicio.readOnly = true;
 
-    // Fecha de fin: no puede ser anterior a ahora, máximo dos meses
+    // Fecha de fin: mínimo mañana a las 00:00, máximo dos meses
     const fechafin = document.getElementById('fechafin');
-    fechafin.min = local;
+    fechafin.min = tomorrowStr;
     fechafin.max = maxDate;
-    fechafin.value = local;
-  });
+    fechafin.value = tomorrowStr;
 
-  function calcularTotal() {
-    const inicio = new Date(document.getElementById('fechainicio').value);
-    const fin = new Date(document.getElementById('fechafin').value);
-    const precio = <?= $habitacion['precioregular'] ?>;
-    if (!isNaN(inicio) && !isNaN(fin) && fin > inicio) {
-      const dias = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
-      if (dias > 0) {
-        document.getElementById('total').value = (precio * dias).toFixed(2);
+    // --- Calcular el total al cargar la página ---
+    calcularTotal();
+    // Y también si el usuario cambia la fecha de fin
+    fechafin.addEventListener('change', calcularTotal);
+
+    // --- Modificador de precio ---
+    function aplicarModificador(subtotal) {
+      let valor = parseFloat($('#modificador_valor').val());
+      let tipo = $('#modificador_tipo').val();
+      let esDescuento = $('#modificador_descuento').is(':checked');
+      if (isNaN(valor) || valor === 0) return subtotal;
+      let modificado = subtotal;
+      if (tipo === 'fijo') {
+        modificado = esDescuento ? subtotal - valor : subtotal + valor;
+      } else if (tipo === 'porcentaje') {
+        let monto = subtotal * (valor / 100);
+        modificado = esDescuento ? subtotal - monto : subtotal + monto;
+      }
+      return modificado > 0 ? modificado : 0;
+    }
+
+    function calcularTotal() {
+      const inicio = new Date(fechainicio.value);
+      const fin = new Date(fechafin.value);
+      const precio = <?= $habitacion['precioregular'] ?>;
+      if (!isNaN(inicio) && !isNaN(fin) && fin > inicio) {
+        const dias = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+        if (dias > 0) {
+          let subtotal = precio * dias;
+          let total = aplicarModificador(subtotal);
+          document.getElementById('total').value = total.toFixed(2);
+        } else {
+          document.getElementById('total').value = '';
+        }
       } else {
         document.getElementById('total').value = '';
       }
-    } else {
-      document.getElementById('total').value = '';
     }
-  }
 
-  document.getElementById('fechafin').addEventListener('change', calcularTotal);
+    // Escucha cambios en el modificador
+    $('#modificador_valor, #modificador_tipo, #modificador_descuento').on('input change', calcularTotal);
+  });
 </script>
 
 <script>
-let acompanantes = [];
+  $(document).ready(function() {
+    $('#fechafin').on('change', function() {
+      const inicio = new Date($('#fechainicio').val());
+      const fin = new Date($(this).val());
+      const precio = <?= $habitacion['precioregular'] ?>;
+      if (!isNaN(inicio) && !isNaN(fin) && fin > inicio) {
+        const dias = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+        if (dias > 0) {
+          $('#total').val((precio * dias).toFixed(2));
+        } else {
+          $('#total').val('');
+        }
+      } else {
+        $('#total').val('');
+      }
+    });
+  });
+</script>
 
-function crearSelectAcompanante(index) {
-  return `
+<script>
+  let acompanantes = [];
+
+  function crearSelectAcompanante(index) {
+    return `
     <div class="input-group mb-2 acompanante-select-row" data-index="${index}">
       <select class="form-control select2-acompanante" name="acompanante[]" style="width: 90%;" required></select>
       <div class="input-group-append">
         <button class="btn btn-danger btn-quitar-acompanante" type="button" title="Quitar"><span>&times;</span></button>
       </div>
     </div>
+    <div class="row mb-3 cuestionario-acompanante" data-index="${index}">
+      <!-- Parentesco solo se mostrará si es menor de edad -->
+      <div class="col-md-4 parentesco-container"></div>
+      <div class="col-md-4">
+        <label>Tipo de Huésped</label>
+        <select class="form-control" name="tipohuesped_acompanante[]" required>
+          <option value="">Seleccione</option>
+          <option value="Adulto">Adulto</option>
+          <option value="Menor de edad">Menor de edad</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label>Observaciones</label>
+        <input type="text" class="form-control" name="observaciones_acompanante[]" maxlength="50" placeholder="Observaciones">
+      </div>
+    </div>
   `;
-}
+  }
 
-function inicializarSelect2Acompanante($select) {
-  $select.select2({
-    theme: "classic",
-    placeholder: 'Busca por nombre o DNI...',
-    ajax: {
-      url: '../../app/controllers/BuscarPersona.php',
-      type: 'POST',
-      dataType: 'json',
-      delay: 250,
-      data: function(params) {
-        return { searchTerm: params.term };
-      },
-      processResults: function(data) {
-        return {
-          results: $.map(data, function(item) {
-            return {
-              id: item.idpersona,
-              text: item.numerodoc + ' - ' + item.nombres + ' ' + item.apellidos,
-              nombres: item.nombres,
-              apellidos: item.apellidos,
-              numerodoc: item.numerodoc
-            };
-          })
-        };
-      },
-      cache: true
+  $(document).ready(function() {
+    // Agrega el primer select al cargar
+    let index = 0;
+
+    function agregarNuevoAcompanante() {
+      $('#acompanantes-container').append(crearSelectAcompanante(index));
+      let $nuevoSelect = $('#acompanantes-container .acompanante-select-row:last .select2-acompanante');
+      inicializarSelect2Acompanante($nuevoSelect);
+      index++;
+    }
+
+    agregarNuevoAcompanante();
+
+    $('#agregar-acompanante').click(function() {
+      agregarNuevoAcompanante();
+    });
+
+    // Quitar acompañante
+    $('#acompanantes-container').on('click', '.btn-quitar-acompanante', function() {
+      const index = $(this).closest('.acompanante-select-row').data('index');
+      // Elimina el select y el cuestionario con el mismo data-index
+      $(this).closest('.acompanante-select-row').remove();
+      $(`.cuestionario-acompanante[data-index="${index}"]`).remove();
+    });
+
+    // Al enviar el formulario, recolecta los datos completos de los acompañantes
+    $('#formAlquiler').on('submit', function(e) {
+      // Habilita todos los selects de tipo de huésped antes de enviar
+      $('select[name="tipohuesped_acompanante[]"]').prop('disabled', false);
+
+      // Validar cliente seleccionado
+      if (!$('#idcliente').val()) {
+        alert("Por favor seleccione un cliente.");
+        e.preventDefault();
+        return;
+      }
+      let acompanantesData = [];
+      let idcliente = $('#idcliente').val();
+      $('.acompanante-select-row').each(function() {
+        let idx = $(this).data('index');
+        let val = $(this).find('.select2-acompanante').val();
+        if (val && val !== idcliente) {
+          // Busca el cuestionario correspondiente
+          let $cuestionario = $('.cuestionario-acompanante[data-index="' + idx + '"]');
+          let tipohuesped = $cuestionario.find('select[name="tipohuesped_acompanante[]"]').val();
+          let observaciones = $cuestionario.find('input[name="observaciones_acompanante[]"]').val();
+          let parentesco_tipo = null;
+          let parentesco_responsable = null;
+          if (tipohuesped === 'Menor de edad') {
+            parentesco_tipo = $cuestionario.find('select[name="parentesco_tipo_acompanante[]"]').val() || null;
+            parentesco_responsable = $cuestionario.find('select[name="parentesco_acompanante[]"]').val() || null;
+          }
+          acompanantesData.push({
+            idpersona: val,
+            tipohuesped: tipohuesped,
+            observaciones: observaciones,
+            parentesco_tipo: parentesco_tipo,
+            parentesco_responsable: parentesco_responsable
+          });
+        }
+      });
+      $('#acompanantes_json').val(JSON.stringify(acompanantesData));
+      $('button[type="submit"]').prop('disabled', true); // Desactivar el botón
+    });
+  });
+
+  function obtenerHuespedesAdultos(excludeId = null) {
+    let responsables = [];
+    // Cliente principal
+    let clienteId = $('#idcliente').val();
+    let clienteText = $('#buscar_cliente').select2('data')[0]?.text || '';
+    if (clienteId && clienteId !== excludeId) responsables.push({ id: clienteId, text: clienteText });
+    // Todos los acompañantes seleccionados (no solo adultos)
+    $('.acompanante-select-row').each(function() {
+      let idx = $(this).data('index');
+      let select = $(this).find('.select2-acompanante');
+      let val = select.val();
+      let text = select.select2('data')[0]?.text || '';
+      if (val && text && val !== excludeId) {
+        responsables.push({ id: val, text: text });
+      }
+    });
+    return responsables;
+  }
+
+  // Cambia el campo parentesco a select de tipo de parentesco y muestra responsable/carta poder según corresponda
+  function cambiarParentescoAMenor($row, index) {
+    // Obtener el id del acompañante actual para excluirlo
+    let acompananteId = $(`.acompanante-select-row[data-index="${index}"] .select2-acompanante`).val();
+    let adultos = obtenerHuespedesAdultos(acompananteId);
+    let options = adultos.map(a => `<option value="${a.id}">${a.text}</option>`).join('');
+    let parentescoHtml = `
+      <label>Parentesco</label>
+      <select class="form-control parentesco-tipo-select" name="parentesco_tipo_acompanante[]" required data-index="${index}">
+        <option value="">Seleccione parentesco</option>
+        <option value="directo">Familiar directo</option>
+        <option value="indirecto">Familiar indirecto</option>
+      </select>
+      <div class="responsable-container mt-2"></div>
+      <div class="cartapoder-container mt-2"></div>
+    `;
+    $row.find('.parentesco-container').html(parentescoHtml);
+  }
+
+  // Maneja el cambio de tipo de parentesco para menores
+  $(document).on('change', '.parentesco-tipo-select', function() {
+    let tipo = $(this).val();
+    let index = $(this).data('index');
+    let $row = $(this).closest('.cuestionario-acompanante');
+    // Obtener el id del acompañante actual para excluirlo
+    let acompananteId = $(`.acompanante-select-row[data-index="${index}"] .select2-acompanante`).val();
+    let adultos = obtenerHuespedesAdultos(acompananteId);
+    let options = adultos.map(a => `<option value="${a.id}">${a.text}</option>`).join('');
+    let responsableHtml = `
+      <label>Responsable</label>
+      <select class="form-control" name="parentesco_acompanante[]" required>
+        <option value="">Seleccione responsable</option>
+        ${options}
+      </select>
+    `;
+    if (tipo === 'directo') {
+      $row.find('.responsable-container').html(responsableHtml);
+      $row.find('.cartapoder-container').html('');
+    } else if (tipo === 'indirecto') {
+      $row.find('.responsable-container').html(responsableHtml);
+      $row.find('.cartapoder-container').html(`
+        <label>Carta Poder (PDF/JPG)</label>
+        <input type="file" class="form-control" name="cartapoder_acompanante[]" accept=".pdf,.jpg,.jpeg,.png" required>
+      `);
+    } else {
+      $row.find('.responsable-container').html('');
+      $row.find('.cartapoder-container').html('');
     }
   });
-}
 
-$(document).ready(function() {
-  // Agrega el primer select al cargar
-  let index = 0;
+  // Inicializa select2 para acompañantes (debe estar definida)
+  function inicializarSelect2Acompanante($select) {
+    $select.select2({
+      theme: "classic",
+      placeholder: 'Busca por nombre o DNI...',
+      ajax: {
+        url: '../../app/controllers/BuscarPersona.php',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+          return { searchTerm: params.term };
+        },
+        processResults: function(data) {
+          return {
+            results: $.map(data, function(item) {
+              return {
+                id: item.idpersona,
+                text: item.numerodoc + ' - ' + item.nombres + ' ' + item.apellidos,
+                fechanac: item.fechanac // <-- importante
+              };
+            })
+          };
+        },
+        cache: true
+      }
+    });
+
+    // Cuando se selecciona un acompañante, calcular edad y setear tipo de huésped automáticamente
+    $select.on('select2:select', function(e) {
+      let data = e.params.data;
+      let $row = $(this).closest('.acompanante-select-row');
+      let idx = $row.data('index');
+      let $cuestionario = $('.cuestionario-acompanante[data-index="' + idx + '"]');
+      let $tipoHuesped = $cuestionario.find('select[name="tipohuesped_acompanante[]"]');
+
+      if (data.fechanac) {
+        let fechaNacimiento = new Date(data.fechanac);
+        let hoy = new Date();
+        let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+        let m = hoy.getMonth() - fechaNacimiento.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+          edad--;
+        }
+        if (edad < 18) {
+          $tipoHuesped.val('Menor de edad').prop('disabled', true);
+          setTimeout(function() {
+            $tipoHuesped.trigger('change');
+          }, 0);
+        } else {
+          $tipoHuesped.val('Adulto').prop('disabled', true);
+          setTimeout(function() {
+            $tipoHuesped.trigger('change');
+          }, 0);
+        }
+      } else {
+        $tipoHuesped.val('').prop('disabled', false);
+      }
+    });
+
+    // Cuando se limpia el select2, habilitar el select de tipo de huésped
+    $select.on('select2:clear', function() {
+      let $row = $(this).closest('.acompanante-select-row');
+      let idx = $row.data('index');
+      let $cuestionario = $('.cuestionario-acompanante[data-index="' + idx + '"]');
+      let $tipoHuesped = $cuestionario.find('select[name="tipohuesped_acompanante[]"]');
+      $tipoHuesped.val('').prop('disabled', false).trigger('change');
+    });
+  }
+
+  // Detecta cambio en tipo de huésped y ajusta el campo parentesco
+  $(document).on('change', 'select[name="tipohuesped_acompanante[]"]', function() {
+    let tipo = $(this).val();
+    let $row = $(this).closest('.cuestionario-acompanante');
+    let index = $row.data('index');
+    if (tipo === 'Menor de edad') {
+      cambiarParentescoAMenor($row, index);
+    } else {
+      // Oculta el campo parentesco para adultos
+      $row.find('.parentesco-container').html('');
+    }
+  });
+
+  // Al agregar acompañante, inicializa select2
   function agregarNuevoAcompanante() {
     $('#acompanantes-container').append(crearSelectAcompanante(index));
     let $nuevoSelect = $('#acompanantes-container .acompanante-select-row:last .select2-acompanante');
     inicializarSelect2Acompanante($nuevoSelect);
     index++;
   }
-
-  agregarNuevoAcompanante();
-
-  $('#agregar-acompanante').click(function() {
-    agregarNuevoAcompanante();
-  });
-
-  // Quitar acompañante
-  $('#acompanantes-container').on('click', '.btn-quitar-acompanante', function() {
-    $(this).closest('.acompanante-select-row').remove();
-  });
-
-  // Al enviar el formulario, recolecta los idpersona seleccionados
-  $('#formAlquiler').on('submit', function(e) {
-    // Validar cliente seleccionado
-    if (!$('#idcliente').val()) {
-      alert("Por favor seleccione un cliente.");
-      e.preventDefault();
-      return;
-    }
-    let ids = [];
-    let idcliente = $('#idcliente').val();
-    $('.select2-acompanante').each(function() {
-      let val = $(this).val();
-      // Evita agregar el cliente principal como acompañante
-      if (val && val !== idcliente) ids.push(val);
-    });
-    $('#acompanantes_json').val(JSON.stringify(ids));
-    $('button[type="submit"]').prop('disabled', true); // Desactivar el botón
-  });
-});
 </script>
 
 <?php

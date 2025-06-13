@@ -37,6 +37,33 @@ document.addEventListener("DOMContentLoaded", function () {
               }
             });
 
+            // INICIALIZAR GRÁFICOS SI ES LA VISTA DE REPORTES
+            if (destino.includes("reportes/menu.php")) {
+                let intentos = 0;
+                function intentarGraficos() {
+                    const ocupacion = document.getElementById('ocupacionChart');
+                    const ingresosC = document.getElementById('ingresosChart');
+                    if (ocupacion && ingresosC) {
+                        // Solicita los datos dinámicos al backend
+                        fetch('reportes/reportes_datos.php')
+                            .then(res => res.json())
+                            .then(datos => {
+                                inicializarGraficosReportes(datos.meses, datos.ingresos, datos.personas);
+                            })
+                            .catch(() => {
+                                // Si falla, usa datos de ejemplo
+                                inicializarGraficosReportes();
+                            });
+                    } else if (intentos < 50) {
+                        intentos++;
+                        setTimeout(intentarGraficos, 100);
+                    } else {
+                        console.error("No se encontraron los canvas para los gráficos.");
+                    }
+                }
+                intentarGraficos();
+            }
+
             setTimeout(() => {
               if (
                 document.querySelector("#tablaClientes") &&
@@ -61,6 +88,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 typeof inicializarDataTableUsuarios === "function"
               ) {
                 inicializarDataTableUsuarios();
+              }
+              if (
+                document.querySelector("#tablaHabitaciones") &&
+                typeof inicializarDataTableHabitaciones === "function"
+              ) {
+                inicializarDataTableHabitaciones();
               }
               // Agrega aquí más inicializadores si tienes más tablas
             }, 0);

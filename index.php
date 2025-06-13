@@ -1,8 +1,5 @@
 <?php
 session_start();
-if (isset($_GET['error'])) {
-    echo "<p style='color:red;'>Usuario o contraseña incorrectos</p>";
-}
 ?>
 
 <!DOCTYPE html>
@@ -10,74 +7,49 @@ if (isset($_GET['error'])) {
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AdminLTE 3 | Log in (v2)</title>
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>Hotel Luna Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap');
 
-  <!-- Google Font: Source Sans Pro -->
-  <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback" />
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="./plugins/fontawesome-free/css/all.min.css" />
-  <!-- icheck bootstrap -->
-  <link
-    rel="stylesheet"
-    href="./plugins/icheck-bootstrap/icheck-bootstrap.min.css" />
-  <!-- Theme style -->
-  <link rel="stylesheet" href="./public/css/adminlte.min.css" />
+    .font-playfair {
+      font-family: 'Playfair Display', serif;
+    }
+  </style>
 </head>
 
-<body class="hold-transition login-page">
-  <div class="login-box">
-    <!-- /.login-logo -->
-    <div class="card card-outline card-primary">
-      <div class="card-header text-center">
-        <a href="../../index2.html" class="h1"><b>Hotel</b>Luna</a>
-      </div>
-      <div class="card-body">
-        <p class="login-box-msg">Sign in to start your session</p>
-
-        <!-- Usuario -->
-        <form action="procesar_login.php" method="POST">
-          <div class="input-group mb-3">
-            <input type="text" name="username" class="form-control" placeholder="Usuario" required />
-            <div class="input-group-append">
-              <div class="input-group-text">
-                <span class="fas fa-envelope"></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="input-group mb-3">
-            <input type="password" name="password" class="form-control" placeholder="Contraseña" required />
-            <div class="input-group-append">
-              <div class="input-group-text">
-                <span class="fas fa-lock"></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-4">
-              <button type="submit" class="btn btn-primary btn-block">
-                Ingresar
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-      <!-- /.card-body -->
-    </div>
-    <!-- /.card -->
+<body class="min-h-screen flex">
+  <!-- Left side with logo -->
+  <div class="hidden md:flex w-1/2 bg-[#0f1a1a] justify-center items-center">
+    <img alt="Logo" height="600" src="/hotelluna/public/img/hotellunalogo.png"
+      width="600" />
   </div>
-  <!-- /.login-box -->
-
-  <!-- jQuery -->
-  <script src="./plugins/jquery/jquery.min.js"></script>
-  <!-- Bootstrap 4 -->
-  <script src="./plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <!-- AdminLTE App -->
-  <script src="./public/js/adminlte.min.js"></script>
+  <!-- Right side with form -->
+  <div class="flex flex-1 bg-[#0a0a0a] justify-center items-center px-6 md:px-20">
+    <form class="w-full max-w-md space-y-6" action="procesar_login.php" method="POST">
+      <?php if (isset($_GET['error'])): ?>
+        <div class="text-red-400 text-center text-sm mb-2">Usuario o contraseña incorrectos</div>
+      <?php endif; ?>
+      <input
+        class="w-full rounded-md bg-[#121212] border border-[#222222] px-4 py-3 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3a3a3a]"
+        placeholder="Usuario" name="username" required type="text" autocomplete="username" />
+      <input
+        class="w-full rounded-md bg-[#121212] border border-[#222222] px-4 py-3 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3a3a3a]"
+        placeholder="Contraseña" name="password" required type="password" autocomplete="current-password" />
+      <div class="text-right">
+        <a class="text-gray-400 text-sm hover:underline" href="#">
+          ¿Olvidaste tu contraseña?
+        </a>
+      </div>
+      <button
+        class="w-full bg-[#2f3a3e] text-gray-400 font-semibold py-3 rounded-md hover:bg-[#3a4a4e] transition-colors"
+        type="submit">
+        Ingresar
+      </button>
+    </form>
+  </div>
 </body>
 
 </html>

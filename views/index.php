@@ -39,6 +39,12 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
   <!-- DataTables v2 CSS -->
   <link href="https://cdn.datatables.net/v/dt/dt-2.0.3/datatables.min.css" rel="stylesheet" />
 
+  <style>
+    canvas {
+      min-height: 300px !important;
+      max-width: 100%;
+    }
+  </style>
 
 </head>
 
@@ -53,7 +59,7 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="index3.html" class="nav-link">Home</a>
+          <a href="index.php" class="nav-link">Home</a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
           <a href="#" class="nav-link">Contact</a>
@@ -138,14 +144,14 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
       <div class="sidebar">
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-          <div class="image">
-            <img src="../public/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
-          </div>
           <div class="info">
-            <a class="d-block"><?= $_SESSION['nombres'] . " " . $_SESSION['apellidos'] ?> (<?= $_SESSION['rol'] ?>)</a>
+            <a class="d-block" style="white-space: normal;">
+              <span><?= $_SESSION['nombres'] ?></span><br>
+              <span><?= $_SESSION['apellidos'] ?></span><br>
+              <small>(<?= $_SESSION['rol'] ?>)</small>
+            </a>
           </div>
         </div>
-
         <!-- Sidebar Menu -->
         <nav class="mt-2" id="navbar-options">
           <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
@@ -167,18 +173,18 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
                 </li>
                 <!-- Solo para Administrador -->
                 <?php if ($_SESSION['rol'] === 'Administrador'): ?>
-                <li class="nav-item">
-                  <a href="#" data-vista="usuarios/listar.php" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>Usuarios</p>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a href="#" data-vista="empresas/listar.php" class="nav-link">
-                    <i class="far fa-circle nav-icon"></i>
-                    <p>Empresas</p>
-                  </a>
-                </li>
+                  <li class="nav-item">
+                    <a href="#" data-vista="usuarios/listar.php" class="nav-link">
+                      <i class="far fa-circle nav-icon"></i>
+                      <p>Usuarios</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="#" data-vista="empresas/listar.php" class="nav-link">
+                      <i class="far fa-circle nav-icon"></i>
+                      <p>Empresas</p>
+                    </a>
+                  </li>
                 <?php endif; ?>
                 <!-- Otros módulos accesibles por ambos roles -->
                 <li class="nav-item">
@@ -208,7 +214,13 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
               </ul>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="#" data-vista="reportes_usuario/menu.php" class="nav-link">
+                <i class="nav-icon fas fa-th"></i>
+                <p>Reportes U</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" data-vista="reportes/menu.php" class="nav-link">
                 <i class="nav-icon fas fa-th"></i>
                 <p>Reportes</p>
               </a>
@@ -344,8 +356,11 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
   <script src="../public/js/datatables/personas.js"></script>
   <script src="../public/js/datatables/alquileres.js"></script>
 
-<!-- cargar ajax de vistas del menú lateral y inicializar DataTables -->
+  <!-- cargar ajax de vistas del menú lateral y inicializar DataTables -->
   <script src="../public/js/cargar_ajax.js"></script>
+  <!-- graficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="../public/js/graficos.js"></script>
 
   <!-- /* Filtros de habitaciones */ -->
   <script>
@@ -527,7 +542,7 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
           case 'disponible':
             return 'bg-success';
           case 'mantenimiento':
-            return 'bg-transparent';
+            return 'bg-warning';
           case 'ocupado':
             return 'bg-dark';
           default:
@@ -540,7 +555,9 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
           case 'disponible':
             return `alquileres/registrar.php?idhabitacion=${habitacion.idhabitacion}`;
           case 'ocupado':
-            return `alquileres/detalle.php?idhabitacion=${habitacion.idhabitacion}`;
+            return `alquileres/detalle.php?idalquiler=${habitacion.idalquiler}`;
+          case 'mantenimiento':
+            return `alquileres/postsalida.php?idhabitacion=${habitacion.idhabitacion}`;
           default:
             return '#';
         }
@@ -571,9 +588,9 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
     });
   </script>
 
-  <!-- Modal Detalle Habitación -->
+  <!-- Modal Detalle Habitación (detalle estilo detalle.php) -->
   <div class="modal fade" id="modalDetalleHabitacion" tabindex="-1" role="dialog" aria-labelledby="modalDetalleLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="modalDetalleLabel">Detalle de Habitación</h5>
@@ -581,11 +598,12 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <div class="modal-body">
-          <p><strong>Habitación:</strong> <span id="detalle-numero"></span></p>
-          <p><strong>Cliente:</strong> <span id="detalle-cliente"></span></p>
-          <p><strong>Hora de inicio:</strong> <span id="detalle-inicio"></span></p>
-          <p><strong>Hora de fin:</strong> <span id="detalle-fin"></span></p>
+        <div class="modal-body" id="detalle-habitacion-body">
+          <!-- Aquí se cargará el detalle completo por JS -->
+          <div class="text-center">
+            <span class="spinner-border text-primary"></span>
+            <p>Cargando detalle...</p>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
@@ -594,28 +612,82 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
     </div>
   </div>
   <!-- /Modal Detalle Habitación -->
+
   <script>
     function mostrarDetalleHabitacion(idhabitacion) {
-      // Limpia los campos
-      document.getElementById('detalle-numero').textContent = '';
-      document.getElementById('detalle-cliente').textContent = '';
-      document.getElementById('detalle-inicio').textContent = '';
-      document.getElementById('detalle-fin').textContent = '';
+      const body = document.getElementById('detalle-habitacion-body');
+      body.innerHTML = `
+      <div class="text-center">
+        <span class="spinner-border text-primary"></span>
+        <p>Cargando detalle...</p>
+      </div>
+    `;
 
       fetch(`menu/detalle_habitacion.php?idhabitacion=${idhabitacion}`)
         .then(response => response.json())
         .then(data => {
-          document.getElementById('detalle-numero').textContent = data.numero || '';
-          document.getElementById('detalle-cliente').textContent = data.cliente || '';
-          document.getElementById('detalle-inicio').textContent = data.inicio || '';
-          document.getElementById('detalle-fin').textContent = data.fin || '';
-          $('#modalDetalleHabitacion').modal('show');
+          if (!data || data.error) {
+            body.innerHTML = `<div class="alert alert-danger">No se pudo obtener el detalle de la habitación.</div>`;
+            return;
+          }
+
+          // Renderizar detalle estilo detalle.php
+          body.innerHTML = `
+          <div class="card border border-secondary shadow rounded p-3">
+            <div class="mb-3">
+              <span class="badge badge-info">ID Habitación: ${data.idhabitacion ?? '-'}</span>
+              <span class="badge badge-secondary ml-2">Piso: ${data.habitacion_piso ?? '-'}</span>
+              <span class="badge badge-primary ml-2">Tipo: ${data.habitacion_tipo ?? '-'}</span>
+              <span class="badge badge-dark ml-2">Estado: ${data.habitacion_estado ?? '-'}</span>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <h5>Habitación <strong>${data.habitacion_numero ?? '-'}</strong></h5>
+                <p><strong>Número de Camas:</strong> ${data.habitacion_numcamas ?? '-'}</p>
+                <p><strong>Precio Regular:</strong> S/. ${data.habitacion_precio ? Number(data.habitacion_precio).toFixed(2) : '-'}</p>
+              </div>
+              <div class="col-md-6 mb-3">
+                <h5>Cliente Principal</h5>
+                <p><strong>Nombre:</strong> ${data.cliente_nombres ?? ''} ${data.cliente_apellidos ?? ''}</p>
+                <p><strong>DNI:</strong> ${data.cliente_numerodoc ?? '-'}</p>
+                <p><strong>Teléfono:</strong> ${data.cliente_telefono ?? '-'}</p>
+              </div>
+            </div>
+            <div class="mb-3">
+              <h5>Acompañantes</h5>
+              ${
+                Array.isArray(data.acompanantes) && data.acompanantes.length > 0
+                  ? `<ul>${data.acompanantes.map(a => `<li>${a.nombres ?? ''} ${a.apellidos ?? ''} (${a.numerodoc ?? '-'})</li>`).join('')}</ul>`
+                  : '<p>No hay acompañantes registrados.</p>'
+              }
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <p><strong>Fecha de Inicio:</strong> ${data.fechahorainicio ?? '-'}</p>
+                <p><strong>Fecha de Fin:</strong> ${data.fechahorafin ?? '-'}</p>
+                <p><strong>Lugar de Procedencia:</strong> ${data.lugarprocedencia ?? '-'}</p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Modalidad de Pago:</strong> ${data.modalidadpago ?? '-'}</p>
+                <p><strong>Total Pagado:</strong> S/. ${data.valoralquiler ? Number(data.valoralquiler).toFixed(2) : '-'}</p>
+                <p><strong>Incluye desayuno:</strong> ${data.incluyedesayuno ? 'Sí' : 'No'}</p>
+              </div>
+            </div>
+            <div class="mb-3">
+              <strong>Observaciones:</strong>
+              <p>${data.observaciones ? data.observaciones.replace(/\n/g, '<br>') : '-'}</p>
+            </div>
+          </div>
+        `;
         })
         .catch(() => {
-          alert('No se pudo obtener el detalle de la habitación.');
+          body.innerHTML = `<div class="alert alert-danger">No se pudo obtener el detalle de la habitación.</div>`;
         });
+
+      $('#modalDetalleHabitacion').modal('show');
     }
   </script>
+
   <!-- Modal para mostrar huéspedes (debe estar fuera de #contenido y de cualquier vista AJAX) -->
   <div class="modal fade" id="modalHuespedes" tabindex="-1" role="dialog" aria-labelledby="modalHuespedesLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -688,32 +760,32 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
   </script>
 
   <!-- Modal para mostrar credenciales -->
-<div class="modal fade" id="modalCredenciales" tabindex="-1" role="dialog" aria-labelledby="modalCredencialesLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalCredencialesLabel">Credenciales del Usuario</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p><strong>Usuario:</strong> <span id="credencialUsuario"></span></p>
-        <p><strong>Contraseña:</strong> <span class="text-danger">No disponible por seguridad</span></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+  <div class="modal fade" id="modalCredenciales" tabindex="-1" role="dialog" aria-labelledby="modalCredencialesLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalCredencialesLabel">Credenciales del Usuario</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Usuario:</strong> <span id="credencialUsuario"></span></p>
+          <p><strong>Contraseña:</strong> <span class="text-danger">No disponible por seguridad</span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-function mostrarCredenciales(username) {
-    document.getElementById('credencialUsuario').textContent = username;
-    $('#modalCredenciales').modal('show');
-}
-</script>
+  <script>
+    function mostrarCredenciales(username) {
+      document.getElementById('credencialUsuario').textContent = username;
+      $('#modalCredenciales').modal('show');
+    }
+  </script>
 
 
 </body>

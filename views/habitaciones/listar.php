@@ -1,88 +1,98 @@
-<!-- Cada vista debe iniciar con esta plantilla -->
-<!-- ZONA: Cabecera -->
+<?php require_once '../../app/config/Conexion.php'; ?>
+<?php require_once '../../app/models/Habitaciones.php'; ?>
 <div class="content-header">
-  <div class="container-fluid">
-    <div class="row mb-2">
-      <div class="col-sm-6">
-        <h1 class="m-0">Habitaciones</h1>
-      </div>
-      <div class="col-sm-6">
-        <ol class="breadcrumb float-sm-right">
-          <li class="breadcrumb-item"><a href="#">Habitaciones</a></li>
-          <li class="breadcrumb-item active">Listar</li>
-        </ol>
-      </div>
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Habitaciones</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Habitaciones</a></li>
+                    <li class="breadcrumb-item active">Listar</li>
+                </ol>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- ZONA: Contenido -->
 <div class="content">
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-12">
-        <!-- Contenido principal -->
-        <div id="contenido" class="container" style="flex-grow: 1; padding: 20px;">
-          <h2>Lista de Habitaciones</h2>
-
-          <!-- Botón para agregar un nuevo cliente -->
-          <a href="habitaciones/registrar.php" class="btn btn-success mb-3" data-vista="#">Agregar habitación</a>
-
-          <!-- Tabla de habitaciones -->
-          <table class="table table-striped table-striped">
-            <thead class="thead">
-              <tr>
-                <th>ID</th>
-                <th>Tipo</th>
-                <th>Numero</th>
-                <th>Piso</th>
-                <th>Numero de camas</th>
-                <th>Precio regular</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              // Incluir el archivo de conexión
-              require_once(__DIR__ . '/../../app/config/Conexion.php');
-              require_once(__DIR__ . '/../../app/models/Habitaciones.php');
-
-              // Obtener la conexión desde la clase Conexion
-              $conn = Conexion::getConexion();
-
-              // Consulta SQL para obtener las habitaciones
-              $sql = "SELECT h.idhabitacion, t.tipohabitacion, h.numero, h.piso, h.numcamas, h.precioregular
-                      FROM habitaciones h
-                      JOIN tipohabitaciones t ON h.idtipohabitacion = t.idtipohabitacion";
-              $result = $conn->query($sql);
-
-              // Verificamos si la consulta fue exitosa y si hay resultados
-              if ($result && $result->rowCount() > 0) {
-                  while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-                      echo "<tr>";
-                      echo "<td>" . $row['idhabitacion'] . "</td>";
-                      echo "<td>" . $row['tipohabitacion'] . "</td>";
-                      echo "<td>" . $row['numero'] . "</td>";
-                      echo "<td>" . $row['piso'] . "</td>";
-                      echo "<td>" . $row['numcamas'] . "</td>";
-                      echo "<td>" . $row['precioregular'] . "</td>";
-                      echo "<td>";
-                      echo "<a href='habitaciones/editar.php?idhabitacion=" . $row['idhabitacion'] . "' class='btn btn-warning btn-sm mr-3'>Editar</a>";
-                      echo "<a href='../controllers/HabitacionController.php?action=eliminar&idhabitacion=" . $row['idhabitacion'] . "' class='btn btn-danger btn-sm' onclick='return confirm(\"¿Estás seguro de eliminar esta habitación?\");'>Eliminar</a>";
-                      echo "</td>";
-                      echo "</tr>";
-                  }
-              } else {
-                  echo "<tr><td colspan='7'>No se encontraron habitaciones.</td></tr>";
-              }
-
-              // Cerrar la conexión
-              $conn = null;
-              ?>
-            </tbody>
-          </table>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <!-- Contenido principal -->
+                <div class="card shadow" style="box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15)!important;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Lista de Habitaciones</h3>
+                        <a href="/hotelluna/views/habitaciones/registrar.php" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i> Nueva Habitación
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <table id="tablaHabitaciones" class="table table-bordered table-striped display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Tipo</th>
+                                    <th>Número</th>
+                                    <th>Piso</th>
+                                    <th>Número de camas</th>
+                                    <th>Precio regular</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $conn = Conexion::getConexion();
+                                $sql = "SELECT h.idhabitacion, t.tipohabitacion, h.numero, h.piso, h.numcamas, h.precioregular
+                                        FROM habitaciones h
+                                        JOIN tipohabitaciones t ON h.idtipohabitacion = t.idtipohabitacion";
+                                $result = $conn->query($sql);
+                                if ($result && $result->rowCount() > 0):
+                                    $i = 1;
+                                    foreach ($result as $row): ?>
+                                        <tr>
+                                            <td><?= $i++ ?></td>
+                                            <td><?= htmlspecialchars($row['tipohabitacion']) ?></td>
+                                            <td><?= htmlspecialchars($row['numero']) ?></td>
+                                            <td><?= htmlspecialchars($row['piso']) ?></td>
+                                            <td><?= htmlspecialchars($row['numcamas']) ?></td>
+                                            <td><?= htmlspecialchars($row['precioregular']) ?></td>
+                                            <td>
+                                                <a href="/hotelluna/views/habitaciones/editar.php?idhabitacion=<?= $row['idhabitacion'] ?>" class="btn btn-warning btn-sm mr-1" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form action="/hotelluna/app/controllers/HabitacionController.php" method="GET" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta habitación?');">
+                                                    <input type="hidden" name="action" value="eliminar">
+                                                    <input type="hidden" name="idhabitacion" value="<?= $row['idhabitacion'] ?>">
+                                                    <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach;
+                                else: ?>
+                                    <tr>
+                                        <td colspan="7" class="text-center">No se encontraron habitaciones.</td>
+                                    </tr>
+                                <?php endif;
+                                $conn = null;
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
+
+<!-- DataTables y JS -->
+<script src="/public/plugins/datatables/datatables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#tablaHabitaciones').DataTable();
+    });
+</script>

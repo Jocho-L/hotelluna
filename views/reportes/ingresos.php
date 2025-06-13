@@ -1,0 +1,35 @@
+<!-- Cada vista debe iniciar con esta plantilla -->
+<!-- ZONA: Cabecera -->
+
+<?php
+include('../../includes/base.php');
+include('../../app/controllers/ClienteController.php');
+?>
+
+<div class="content">
+  <div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10">
+        <div class="card shadow mt-4 mb-4">
+          <div class="card-header">
+            <h3 class="card-title">Bienvenido a Hotel Luna</h3>
+          </div>
+          <div class="card-body">
+            <!-- Aquí va el contenido principal de tu página -->
+            <p>Selecciona un módulo del menú lateral para comenzar.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ZONA: Contenido -->
+<div class="content">
+  <div class="container-fluid">
+    <div class="row">
+
+    </div>
+  </div>
+</div>
+

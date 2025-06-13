@@ -35,15 +35,28 @@ class Habitacion {
     // Nuevo método para actualizar una habitación
     public static function actualizar($data) {
         $conn = Conexion::getConexion();
-        $sql = "UPDATE habitaciones SET 
-                idtipohabitacion = :idtipohabitacion, 
-                numero = :numero, 
-                piso = :piso, 
-                numcamas = :numcamas, 
-                precioregular = :precioregular, 
+        $sql = "UPDATE habitaciones SET
+                idtipohabitacion = :idtipohabitacion,
+                numero = :numero,
+                piso = :piso,
+                numcamas = :numcamas,
+                precioregular = :precioregular,
                 estado = :estado
                 WHERE idhabitacion = :idhabitacion";
         $stmt = $conn->prepare($sql);
         return $stmt->execute($data);
+    }
+
+    // Método para obtener habitaciones ocupadas y en mantenimiento con el nombre del tipo
+    public static function obtenerOcupadasYMantenimiento() {
+        $conn = Conexion::getConexion();
+        $sql = "SELECT h.idhabitacion, h.numero, t.tipohabitacion, h.estado, a.idalquiler
+                FROM habitaciones h
+                INNER JOIN tipohabitaciones t ON h.idtipohabitacion = t.idtipohabitacion
+                LEFT JOIN alquileres a ON h.idhabitacion = a.idhabitacion AND h.estado = 'ocupada' AND a.fechahorafin IS NULL
+                WHERE h.estado IN ('ocupada', 'mantenimiento')";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

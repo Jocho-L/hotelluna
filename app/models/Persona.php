@@ -1,7 +1,7 @@
 <?php
 require_once(__DIR__ . '/../config/Conexion.php');
 
-class Cliente
+class Persona
 {
     private $db;
 
@@ -10,11 +10,8 @@ class Cliente
         $this->db = Conexion::getConexion();
     }
 
-    public function guardarPersona($tipodoc, $numerodoc, $apellidos, $nombres, $fechanac, $telefono)
+    public function guardarPersona($tipodoc, $numerodoc, $apellidos, $nombres, $fechanac, $telefono, $genero)
     {
-        // Puedes ajustar el valor de 'genero' según tu formulario
-        $genero = $_POST['genero'] ?? 'otro';
-
         $sql = "INSERT INTO personas (tipodoc, numerodoc, apellidos, genero, nombres, telefono, fechanac)
                 VALUES (:tipodoc, :numerodoc, :apellidos, :genero, :nombres, :telefono, :fechanac)";
         $stmt = $this->db->prepare($sql);
@@ -31,5 +28,13 @@ class Cliente
         } else {
             throw new Exception("No se pudo registrar la persona.");
         }
+    }
+
+    public function actualizarPersonaParcial($idpersona, $genero, $fechanac, $telefono)
+    {
+        $conexion = Conexion::getConexion();
+        $sql = "UPDATE personas SET genero = ?, fechanac = ?, telefono = ? WHERE idpersona = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->execute([$genero, $fechanac, $telefono, $idpersona]);
     }
 }

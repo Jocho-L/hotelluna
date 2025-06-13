@@ -8,7 +8,7 @@ $resultados = [];
 
 if ($searchTerm !== '') {
     $stmt = $conexion->prepare(
-        "SELECT idpersona, tipodoc, numerodoc, nombres, apellidos 
+        "SELECT idpersona, tipodoc, numerodoc, nombres, apellidos, fechanac 
          FROM personas 
          WHERE numerodoc LIKE ? OR nombres LIKE ? OR apellidos LIKE ? 
          LIMIT 20"

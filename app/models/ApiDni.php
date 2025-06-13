@@ -21,14 +21,13 @@ class ApiDni
         $data = json_decode($response, true);
 
         if (isset($data['numeroDocumento'])) {
-            // Adaptar la estructura para que tu controlador la entienda
             return [
                 'data' => [
                     'nombres' => $data['nombres'] ?? '',
                     'apellido_paterno' => $data['apellidoPaterno'] ?? '',
                     'apellido_materno' => $data['apellidoMaterno'] ?? '',
-                    'fecha_nacimiento' => $data['fechaNacimiento'] ?? '',
-                    'sexo' => $data['sexo'] ?? ''
+                    'fecha_nacimiento' => $data['fechaNacimiento'] ?? ''
+                    // 'sexo' => $sexo // Eliminado, la API no lo retorna realmente
                 ]
             ];
         } else {
