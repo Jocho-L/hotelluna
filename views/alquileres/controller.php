@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (!isset($_POST['accion']) || $_POST[
         $idalquiler = $conexion->lastInsertId();
 
         // Registrar al cliente como huésped tipo "cliente"
-        $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped) VALUES (?, ?, 'cliente')");
+        $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped, fechaentrada) VALUES (?, ?, 'cliente', NOW())");
         $stmt->execute([$idalquiler, $idcliente]);
 
         // Registrar acompañantes con sus datos completos
@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (!isset($_POST['accion']) || $_POST[
                 }
             }
 
-            $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped, observaciones, parentesco, idresponsable, cartapoder) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conexion->prepare("INSERT INTO huespedes (idalquiler, idpersona, tipohuesped, observaciones, parentesco, idresponsable, cartapoder, fechaentrada) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
             $stmt->execute([
                 $idalquiler,
                 $idpersona,

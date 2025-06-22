@@ -1,3 +1,4 @@
+
 use hotel;
 
 select * from egresos;
@@ -39,3 +40,4 @@ INNER JOIN personas p ON h.idpersona = p.idpersona
 LEFT JOIN personas rp ON h.idresponsable = rp.idpersona
 WHERE h.idalquiler = :idalquiler;
 
+delete from personas where idpersona = 8;

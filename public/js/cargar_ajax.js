@@ -64,6 +64,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 intentarGraficos();
             }
 
+            // INICIALIZAR FULLCALENDAR SI EXISTE EL DIV
+            setTimeout(() => {
+                const calendarEl = document.getElementById('calendar');
+                console.log('calendarEl:', calendarEl); // Para depuración
+                if (calendarEl && typeof FullCalendar !== 'undefined') {
+                    // Limpia el contenido previo si lo hubiera
+                    calendarEl.innerHTML = '';
+                    const calendar = new FullCalendar.Calendar(calendarEl, {
+                        initialView: 'dayGridMonth',
+                        height: 650,
+                        events: 'calendario/eventos' // <-- Agrega esta línea para cargar eventos vía AJAX
+                    });
+                    calendar.render();
+                }
+            }, 0);
+
             setTimeout(() => {
               if (
                 document.querySelector("#tablaClientes") &&

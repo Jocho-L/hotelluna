@@ -164,12 +164,12 @@ if (!isset($_SESSION['idusuario'])) {
                     <p>Usuarios</p>
                   </a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                   <a href="#" data-vista="/hotelluna/views/empresas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Empresas</p>
                   </a>
-                </li>
+                </li> -->
                 <?php endif; ?>
                 <!-- Otros módulos accesibles por ambos roles -->
                 <li class="nav-item">

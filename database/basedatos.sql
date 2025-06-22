@@ -112,6 +112,8 @@ CREATE TABLE huespedes (
     parentesco VARCHAR(50),
     idresponsable INT NULL,
     cartapoder TEXT DEFAULT NULL,
+    fechaentrada DATETIME DEFAULT NULL,   -- Nueva columna para fecha/hora de entrada
+    fechasalida DATETIME DEFAULT NULL,    -- Nueva columna para fecha/hora de salida
     FOREIGN KEY (idresponsable) REFERENCES personas(idpersona) ON DELETE SET NULL,
     FOREIGN KEY (idalquiler) REFERENCES alquileres(idalquiler) ON DELETE CASCADE,
     FOREIGN KEY (idpersona) REFERENCES personas(idpersona) ON DELETE CASCADE

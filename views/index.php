@@ -38,7 +38,8 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
   <link rel="stylesheet" href="../public/css/adminlte.min.css" />
   <!-- DataTables v2 CSS -->
   <link href="https://cdn.datatables.net/v/dt/dt-2.0.3/datatables.min.css" rel="stylesheet" />
-
+  <!-- FullCalendar JS -->
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar/index.global.min.js'></script>
   <style>
     canvas {
       min-height: 300px !important;
@@ -179,24 +180,30 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
                       <p>Usuarios</p>
                     </a>
                   </li>
-                  <li class="nav-item">
+                  <!-- <li class="nav-item">
                     <a href="#" data-vista="empresas/listar.php" class="nav-link">
                       <i class="far fa-circle nav-icon"></i>
                       <p>Empresas</p>
                     </a>
-                  </li>
+                  </li> -->
                 <?php endif; ?>
                 <!-- Otros módulos accesibles por ambos roles -->
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                   <a href="#" data-vista="clientes/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Clientes</p>
                   </a>
-                </li>
+                </li> -->
                 <li class="nav-item">
                   <a href="#" data-vista="alquileres/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Alquileres</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" data-vista="calendario/menu.php" class="nav-link">
+                    <i class="far fa-circle nav-icon"></i>
+                    <p>Calendario</p>
                   </a>
                 </li>
                 <li class="nav-item">
@@ -205,12 +212,12 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
                     <p>Personas</p>
                   </a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                   <a href="#" data-vista="reservas/listar.php" class="nav-link">
                     <i class="far fa-circle nav-icon"></i>
                     <p>Reservas</p>
                   </a>
-                </li>
+                </li> -->
               </ul>
             </li>
             <li class="nav-item">
@@ -219,12 +226,14 @@ if (!in_array($_SESSION['rol'], $roles_permitidos)) {
                 <p>Reportes U</p>
               </a>
             </li>
+            <?php if ($_SESSION['rol'] === 'Administrador'): ?>
             <li class="nav-item">
               <a href="#" data-vista="reportes/menu.php" class="nav-link">
                 <i class="nav-icon fas fa-th"></i>
                 <p>Reportes</p>
               </a>
             </li>
+            <?php endif; ?>
             <li>
               <p><a href="../logout.php">Cerrar sesión</a></p>
             </li>

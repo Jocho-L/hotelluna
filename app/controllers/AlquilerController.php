@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idcliente'])) {
                     }
                 }
 
-                $stmt = $conexion->prepare("INSERT INTO huespedes 
+                $stmt = $conexion->prepare("INSERT INTO huespedes
                     (idalquiler, idpersona, tipohuesped, observaciones, idresponsable)
                     VALUES (?, ?, ?, ?, ?)");
                 $stmt->execute([
@@ -144,7 +144,7 @@ function obtenerDetalleAlquilerPorId($conexion, $idalquiler) {
 
     if ($alquiler) {
         // Obtener acompañantes con nombre del responsable
-        $sqlA = "SELECT 
+        $sqlA = "SELECT
                     h.idhuesped,
                     per.nombres AS nombre_huesped,
                     per.apellidos AS apellido_huesped,

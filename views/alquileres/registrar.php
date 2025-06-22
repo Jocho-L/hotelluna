@@ -45,6 +45,7 @@ $now = date('Y-m-d\TH:i');
       <div class="col-lg-10">
         <div class="card border border-secondary shadow rounded p-4">
           <form id="formAlquiler" method="POST" enctype="multipart/form-data" action="controller.php?idhabitacion=<?= $habitacion['idhabitacion'] ?>">
+
             <!-- Detalles de la Habitación -->
             <div class="card mb-4 bg-light">
               <div class="card-header bg-primary text-white">
@@ -561,7 +562,7 @@ $now = date('Y-m-d\TH:i');
     } else if (tipo === 'indirecto') {
       $row.find('.responsable-container').html(responsableHtml);
       $row.find('.cartapoder-container').html(`
-        <label>Carta Poder (PDF/JPG)</label>
+        <label> Autorización firmada por los padres (PDF/JPG)</label>
         <input type="file" class="form-control" name="cartapoder_acompanante[]" accept=".pdf,.jpg,.jpeg,.png" required>
       `);
     } else {
